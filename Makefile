@@ -5,6 +5,7 @@ SRCFILES = chess.cc game.cc player.cc piece.cc board.cc view.cc
 OFILES = $(SRCFILES:%.cc=%.o)
 
 all: $(OUT)
+	CXXFLAGS += -I ./include/
 	@rm -f *.o
 
 $(OUT): $(OFILES)
