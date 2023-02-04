@@ -1,4 +1,5 @@
 - Clarify some parts of the 'game' translation unit (the process_move functions could be merged)
+- Improve the move computation (Wrong behavior beyond a 2 plies depth)
 - Make the computer able to rock (currently a glitch where the King goes to f1 or c1)
 - Improve the computer (for the moment it only plays random moves)
 - Maybe when I will have time, implement a real chess engine that can be used for game analysis
