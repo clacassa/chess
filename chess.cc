@@ -124,7 +124,7 @@ void usage(char * prog_name) {
                   "\t\t\t  is given, and then exit.\n"
                << "  -b, --black\t\tTo play as Black.\n"
                << "  --pvp\t\t\tTo play locally against a friend.\n"
-               << "  -c, --computer-dual\tWitness the computer playing against himself\n"
+               << "  -c, --computer-dual\tWitness the computer playing against himself.\n"
                << "  --style\t\tTo select a color scheme for the chessboard.\n"
                << "  --help\t\tPrint this message and exit.\n"
                << "  --version\t\tPrint version information and exit.\n";
