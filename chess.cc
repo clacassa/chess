@@ -23,7 +23,7 @@
 #include <cstring>
 #include <locale>
 #include <fcntl.h>
-#include <io.h>
+// #include <io.h>
 #include "view.h"
 #include "game.h"
 
