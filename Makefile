@@ -1,11 +1,10 @@
 OUT = chess
 CXX = g++
-CXXFLAGS = -time -g -Wall -std=c++11
+CXXFLAGS = -time -g -Wall -std=c++11 -I ./include/
 SRCFILES = chess.cc game.cc player.cc piece.cc board.cc view.cc
 OFILES = $(SRCFILES:%.cc=%.o)
 
 all: $(OUT)
-	CXXFLAGS += -I ./include/
 	@rm -f *.o
 
 $(OUT): $(OFILES)
