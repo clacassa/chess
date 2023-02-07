@@ -13,7 +13,7 @@ void message::open_log_win() {
                "[console]::windowheight=10; "
                "[console]::bufferwidth=[console]::windowwidth; " 
                "[console]::title='Moves History'; "
-               "gc log.txt -Wait -Tail 30\"");
+               "gc log.txt -Wait\"");
         HWND handle = FindWindow(NULL, "History if moves");
         SetWindowPos(handle, NULL, 40, 50, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
     #elif __linux__
