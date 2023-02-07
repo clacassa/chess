@@ -1,6 +1,9 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#ifdef _WIN32
+    #include <Windows.h>
+#endif
 #include "message.h"
 #include "view.h"
 
@@ -9,7 +12,10 @@ void message::open_log_win() {
         system("start pwsh -nop -nol -c \"[console]::windowwidth=50; "
                "[console]::windowheight=10; "
                "[console]::bufferwidth=[console]::windowwidth " 
+               "$Host.UI.RawUI.WindowTitle = 'Moves History' "
                "gc log.txt -Wait -Tail 30\"");
+        HWND handle = FindWindow(NULL, "Moves History");
+        SetWindowPos(handle, NULL, 40, 50, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
     #elif __linux__
         system("gnome-terminal --geometry=50x10+500+400 -- tail -f log.txt ");
     #endif
