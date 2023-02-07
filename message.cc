@@ -12,7 +12,7 @@ void message::open_log_win() {
         system("start pwsh -nop -nol -c \"[console]::windowwidth=50; "
                "[console]::windowheight=10; "
                "[console]::bufferwidth=[console]::windowwidth; " 
-               "$Host.UI.RawUI.WindowTitle = 'Moves History'; "
+               "[console]::title='Moves History; ' "
                "gc log.txt -Wait -Tail 30\"");
         HWND handle = FindWindow(NULL, "Moves History");
         SetWindowPos(handle, NULL, 40, 50, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
