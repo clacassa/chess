@@ -207,23 +207,21 @@ void Pawn::updt_cov_sqrs() {
     if (r >= 1 && r <= board_size) {
         if (is_empty(file, r))
             cov_sqrs.push_back({file, r});
+        else
+            blocked = true;
     }
-    else
-        blocked = true;
 
-    if (!blocked) {
-        if (char(file-1) >= 'a') {
-            if (is_enemy(code, char(file-1), r))
-                cov_sqrs.push_back({char(file-1), r});
-            if (is_en_passant_sqr(char(file-1), r))
-                cov_sqrs.push_back({char(file-1), r});
-        }
-        if (char(file+1) <= 'h') {
-            if (is_enemy(code, char(file+1), r)) 
-                cov_sqrs.push_back({char(file+1), r});
-            if (is_en_passant_sqr(char(file+1), r))
-                cov_sqrs.push_back({char(file+1), r});
-        }
+    if (char(file-1) >= 'a') {
+        if (is_enemy(code, char(file-1), r))
+            cov_sqrs.push_back({char(file-1), r});
+        if (is_en_passant_sqr(char(file-1), r))
+            cov_sqrs.push_back({char(file-1), r});
+    }
+    if (char(file+1) <= 'h') {
+        if (is_enemy(code, char(file+1), r)) 
+            cov_sqrs.push_back({char(file+1), r});
+        if (is_en_passant_sqr(char(file+1), r))
+            cov_sqrs.push_back({char(file+1), r});
     }
     if (code == 'P') 
         ++r;
@@ -257,7 +255,6 @@ void Pawn::updt_position(char SAN_file, char SAN_rank, bool silent) {
 
 void Pawn::updt_position(char SAN_file, int SAN_rank, bool silent) {
     if (!has_moved && !silent) {
-        // std::wcout << "entrailles\n";
         if (code == 'P' && SAN_rank == rank + 2) {
             has_en_passant = true;
             write_en_passant_sqr(file, rank+1);

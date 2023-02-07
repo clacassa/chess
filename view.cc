@@ -21,6 +21,42 @@
 #include "view.h"
 
 static ColorScheme scheme(beige, brown);
+static bool alt_piece_style(false);
+
+bool customize_style() {
+    color_scheme_menu();
+    int select;
+    if (!(std::wcin >> select)) {
+        std::wcin.clear();
+        std::wcin.ignore(10000, '\n');
+        std::wcout << "Expected an integer\n";
+        return false;
+    }
+    set_color_scheme(select);
+
+    std::wcout << "White pieces style options: \n[0]\t"
+               << scheme.dark_sqr << w_king << scheme.light_sqr << w_queen
+               << scheme.dark_sqr << w_bishop << scheme.light_sqr << w_knight
+               << scheme.dark_sqr << w_rook << scheme.light_sqr << w_pawn
+               << reset_sgr << "  (default)\n";
+    
+    std::wcout << "[1]\t"
+               << scheme.dark_sqr << w_king_bis << scheme.light_sqr << w_queen_bis
+               << scheme.dark_sqr << w_bishop_bis << scheme.light_sqr << w_knight_bis
+               << scheme.dark_sqr << w_rook_bis << scheme.light_sqr << w_pawn_bis
+               << reset_sgr << "\n";
+
+    if (!(std::wcin >> select)) {
+        std::wcin.clear();
+        std::wcin.ignore(10000, '\n');
+        std::wcout << "Expected an integer\n";
+        return false;
+    }
+    if (select == 1)
+        alt_piece_style = true;
+
+    return true;
+}
 
 void color_scheme_menu() {
     std::wcout << "You can choose a color scheme among the following: \n";
@@ -35,8 +71,9 @@ void color_scheme_menu() {
     }
 }
 
-void set_color_scheme(int id) {
-    scheme = c_schemes[id];
+void set_color_scheme(size_t id) {
+    if (id >= 0 && id < c_schemes.size())
+        scheme = c_schemes[id];
 }
 
 void print_board(Board b, bool white_pov, Square start_sqr, Square target_sqr,
@@ -136,22 +173,22 @@ void code_to_sgr(std::wstring& sgr_string, char code) {
             sgr_string += empty_square;
             break;
         case 'K':
-            sgr_string += w_king;
+            sgr_string += (alt_piece_style ? w_king_bis : w_king);
             break;
         case 'Q':
-            sgr_string += w_queen;
+            sgr_string += (alt_piece_style ? w_queen_bis : w_queen);
             break;
         case 'R':
-            sgr_string += w_rook;
+            sgr_string += (alt_piece_style ? w_rook_bis : w_rook);
             break;
         case 'B':
-            sgr_string += w_bishop;
+            sgr_string += (alt_piece_style ? w_bishop_bis : w_bishop);
             break;
         case 'N':
-            sgr_string += w_knight;
+            sgr_string += (alt_piece_style ? w_knight_bis : w_knight);
             break;
         case 'P':
-            sgr_string += w_pawn;
+            sgr_string += (alt_piece_style ? w_pawn_bis : w_pawn);
             break;
         case 'k':
             sgr_string += b_king;

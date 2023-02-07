@@ -14,7 +14,7 @@ public:
     virtual ~Game();
     void game_flow(bool black, bool pvp, bool cvc);
     void prompt_move();
-    void print_position();
+    void print_position(bool w_ply);
     void updt_board();
 
     bool parse_fen(std::string fen);
@@ -25,29 +25,38 @@ public:
     bool is_SAN_valid(std::wstring SAN);
     bool decode_SAN(char c, char prev, bool done, int i, int len);
 
-    int process_move();
     int is_resign();
     void resign();
 
     bool computer_play();
 
-    void test_gen_moves(int max_depth=4);
+    void test_gen_moves(int max_depth=1);
 private:
     White white;
     Black black;
-    bool w_turn, capture, promote, q_castle, k_castle, check, SAN_chk,
-        SAN_cap, w_en_psst, b_en_psst;
-    char SAN_piece, SAN_file, SAN_rank, SAN_spec_file, SAN_spec_rank, 
-        prom_piece;
-    Square start, target, last_move;
+    Square start, target;
+    Move last_move;
     Piece* attacker;
+
+    std::wstring SAN;
+    char SAN_piece, SAN_file, SAN_rank, SAN_spec_file, SAN_spec_rank, SAN_prom_pc;
+    bool SAN_cap, SAN_chk, SAN_promote;
+
+    bool w_turn, capture, q_castle, k_castle, check, w_en_psst, b_en_psst;
+
+    int nb_move;
+    
     void piece_from_fen(char code, char file, int rank);
+
     bool is_move_legal(Piece* p, char trgt_file, int trgt_rank, bool w_ply);
     bool handle_check(Piece* piece, char trgt_file, int trgt_rank, bool capt, bool w_p);
-    bool process_move(Piece* p, char trgt_file, int trgt_rank, bool w_ply);
-    bool process_castling();
-    bool is_checkmate();
-    bool is_draw();
+    bool process_move(Piece* p, char trgt_file, int trgt_rank, bool w_ply, 
+                                                               bool test=false);
+    bool is_checkmate(bool w_ply);
+    bool is_draw(bool w_ply);
+
+    void reset_san_variables();
+
     int compute_moves(int depth=1, bool w_turn=true);
 };
 

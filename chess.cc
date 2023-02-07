@@ -22,8 +22,11 @@
 #include <string>
 #include <cstring>
 #include <locale>
-#include <fcntl.h>
-// #include <io.h>
+#ifdef _WIN32
+    #include <io.h>
+    #include <fcntl.h>
+#endif
+#include "message.h"
 #include "view.h"
 #include "game.h"
 
@@ -34,11 +37,16 @@ bool verify_FEN_file(std::string FEN_filename);
 bool load_FEN_file(Game& game, std::string FEN_filename);
 
 int main(int argc, char ** argv) {
-    _setmode(_fileno(stdout), _O_U16TEXT);
+    #ifdef _WIN32
+        _setmode(_fileno(stdout), _O_U16TEXT);
+    #else
+        std::setlocale(LC_ALL, "en_US.UTF-8");
+    #endif
+
     srand((unsigned) time(0));
 
     Game game;
-    bool black(false); bool pvp(false), cvc(false);
+    bool black(false), pvp(false), cvc(false);
     
     /* Parse CLI args */
     int parse_result(parse_cli_args(argc, argv, game, black, pvp, cvc));
@@ -87,15 +95,8 @@ int parse_cli_args(int argc, char ** argv, Game& game, bool& black, bool& pvp,bo
                 game.parse_fen(ini_board);
             }
             else if (strcmp(argv[i], "--style") == 0) {
-                color_scheme_menu();
-                int select;
-                if (!(std::wcin >> select)) {
-                    std::wcin.clear();
-                    std::wcin.ignore(10000, '\n');
-                    std::wcout << "Expected an integer\n";
+                if (!customize_style())
                     return 1;
-                }
-                set_color_scheme(select);
                 game.parse_fen(ini_board);
             }
             else if (strcmp(argv[i], "--help") == 0) {
@@ -141,13 +142,13 @@ bool verify_FEN_file(std::string FEN_filename) {
 
     std::ifstream FEN_file(FEN_filename);
     if (FEN_file.fail()) {
-        std::wcout << FILE_ERROR;
+        message::fen_file_not_found(FEN_filename);
         return false;
     }
 
     size_t pos(FEN_filename.find_last_of("."));
     if (FEN_filename.substr(pos + 1) != "fen") {
-        std::wcout << FEN_FILE_BAD_EXTENSION;
+        message::bad_extension(FEN_filename);
         return false;
     }
     return true;
@@ -166,48 +167,3 @@ bool load_FEN_file(Game& game, std::string FEN_filename) {
     }
     return true;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

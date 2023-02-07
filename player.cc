@@ -20,6 +20,7 @@
 #include "player.h"
 #include "piece.h"
 #include "board.h"
+#include "message.h"
 
 Piece* Player::unique_piece_for_move(char SAN_piece, char SAN_file, char SAN_rank,
                                      char SAN_spec_file, char SAN_spec_rank) {
@@ -33,13 +34,15 @@ Piece* Player::unique_piece_for_move(char SAN_piece, char SAN_file, char SAN_ran
             elligible_pieces.push_back(p);
         }
     }
-    if (elligible_pieces.size() == 1) {
-        start_sqr.file = elligible_pieces[0]->get_file();
-        start_sqr.rank = elligible_pieces[0]->get_rank();
+    if (elligible_pieces.size() == 1)
         return elligible_pieces[0];
-    }
-    if (elligible_pieces.size() == 0) std::wcout << ILLEGAL << "\n";
-    if (elligible_pieces.size() > 1) std::wcout << AMBIGUEOUS << "\n";
+
+    if (elligible_pieces.size() == 0)
+        message::illegal_move(SAN_file, SAN_rank - '0', SAN_piece);
+
+    else if (elligible_pieces.size() > 1)
+        message::ambigueous_move(SAN_file, SAN_rank-'0', SAN_piece);
+
     return nullptr;
 }
 
@@ -179,44 +182,59 @@ bool White::king_is_last() {
     return true;
 }
 
-bool White::can_k_castle() {
+bool White::can_k_castle(bool chk_empty_sqrs) {
     bool no_rook_on_h1(true);
     for (auto& p : pieces) {
-        if (p->get_code() == 'K' && p->get_has_moved()) return false;
+        if (p->get_code() == 'K' && (p->get_has_moved() || p->get_file() != 'e'))
+            return false;
         if (p->get_code() == 'R' && p->get_file() == 'h' && p->get_rank() == 1) {
             no_rook_on_h1 = false;
-            if (p->get_has_moved()) return false;
+            if (p->get_has_moved())
+                return false;
         }
     }
-    if (no_rook_on_h1) return false;
-    for (char c('f'); c <= 'g'; ++c) {
-        if (!is_empty(c, 1)) return false;
+    if (no_rook_on_h1)
+        return false;
+
+    if (chk_empty_sqrs) {
+        for (char c('f'); c <= 'g'; ++c) {
+            if (!is_empty(c, 1))
+                return false;
+        }
     }
+
     return true;
 }
 
-bool White::can_q_castle() {
+bool White::can_q_castle(bool chk_empty_sqrs) {
     bool no_rook_on_a1(true);
     for (auto& p : pieces) {
-        if (p->get_code() == 'K' && p->get_has_moved()) return false;
+        if (p->get_code() == 'K' && (p->get_has_moved() || p->get_file() != 'e'))
+            return false;
         if (p->get_code() == 'R' && p->get_file() == 'a' && p->get_rank() == 1) {
             no_rook_on_a1 = false;
-            if (p->get_has_moved()) return false;
+            if (p->get_has_moved())
+                return false;
         }
     }
-    if (no_rook_on_a1) return false;
-    for (char c('d'); c >= 'b'; --c) {
-        if (!is_empty(c, 1)) return false;
+    if (no_rook_on_a1)
+        return false;
+
+    if (chk_empty_sqrs) {
+        for (char c('d'); c >= 'b'; --c) {
+            if (!is_empty(c, 1))
+                return false;
+        }
     }
+    
     return true;
 }
 
 void White::castle_king_side() {
     for (auto& p : pieces) {
-        if (p->get_code() == 'K') p->updt_position('g', '1');
+        if (p->get_code() == 'K')
+            p->updt_position('g', '1');
         if (p->get_code() == 'R' && p->get_file() == 'h' && p->get_rank() == 1) {
-            start_sqr.file = p->get_file();
-            start_sqr.rank = p->get_rank();
             p->updt_position('f', '1');
         }
     }
@@ -224,12 +242,25 @@ void White::castle_king_side() {
 
 void White::castle_queen_side() {
     for (auto& p : pieces) {
-        if (p->get_code() == 'K') p->updt_position('c', '1');
+        if (p->get_code() == 'K')
+            p->updt_position('c', '1');
         if (p->get_code() == 'R' && p->get_file() == 'a' && p->get_rank() == 1) {
-            start_sqr.file = p->get_file();
-            start_sqr.rank = p->get_rank();
             p->updt_position('d', '1');
         }
+    }
+}
+
+void White::undo_k_castle() {
+    for (auto& p : pieces) {
+        if (p->get_code() == 'R' && p->get_file() == 'f' && p->get_rank() == 1)
+            p->updt_position('h', 1);
+    }
+}
+
+void White::undo_q_castle() {
+    for (auto& p : pieces) {
+        if (p->get_code() == 'R' && p->get_file() == 'd' && p->get_rank() == 1)
+            p->updt_position('a', 1);
     }
 }
 
@@ -274,44 +305,59 @@ bool Black::king_is_last() {
     return true;
 }
 
-bool Black::can_k_castle() {
+bool Black::can_k_castle(bool chk_empty_sqrs) {
     bool no_rook_on_h8(true);
     for (auto& p : pieces) {
-        if (p->get_code() == 'k' && p->get_has_moved()) return false;
+        if (p->get_code() == 'k' && (p->get_has_moved() || p->get_file() != 'e'))
+            return false;
         if (p->get_code() == 'r' && p->get_file() == 'h' && p->get_rank() == 8) {
             no_rook_on_h8 = false;
-            if (p->get_has_moved()) return false;
+            if (p->get_has_moved())
+                return false;
         }
     }
-    if (no_rook_on_h8) return false;
-    for (char c('f'); c <= 'g'; ++c) {
-        if (!is_empty(c, 8)) return false;
+    if (no_rook_on_h8)
+        return false;
+
+    if (chk_empty_sqrs) {
+        for (char c('f'); c <= 'g'; ++c) {
+            if (!is_empty(c, 8))
+                return false;
+        }
     }
+
     return true;
 }
 
-bool Black::can_q_castle() {
+bool Black::can_q_castle(bool chk_empty_sqrs) {
     bool no_rook_on_a8(true);
     for (auto& p : pieces) {
-        if (p->get_code() == 'k' && p->get_has_moved()) return false;
+        if (p->get_code() == 'k' && (p->get_has_moved() || p->get_file() != 'e')) 
+            return false;
         if (p->get_code() == 'r' && p->get_file() == 'a' && p->get_rank() == 8) {
             no_rook_on_a8 = false;
-            if (p->get_has_moved()) return false;
+            if (p->get_has_moved())
+                return false;
         }
     }
-    if (no_rook_on_a8) return false;
-    for (char c('d'); c >= 'b'; --c) {
-        if (!is_empty(c, 8)) return false;
+    if (no_rook_on_a8)
+        return false;
+
+    if (chk_empty_sqrs) {
+        for (char c('d'); c >= 'b'; --c) {
+            if (!is_empty(c, 8))
+                return false;
+        }
     }
+
     return true;
 }
 
 void Black::castle_king_side() {
     for (auto& p : pieces) {
-        if (p->get_code() == 'k') p->updt_position('g', '8');
+        if (p->get_code() == 'k')
+            p->updt_position('g', '8');
         if (p->get_code() == 'r' && p->get_file() == 'h' && p->get_rank() == 8) {
-            start_sqr.file = p->get_file();
-            start_sqr.rank = p->get_rank();
             p->updt_position('f', '8');
         }
     }
@@ -319,11 +365,24 @@ void Black::castle_king_side() {
 
 void Black::castle_queen_side() {
     for (auto& p : pieces) {
-        if (p->get_code() == 'k') p->updt_position('c', '8');
+        if (p->get_code() == 'k')
+            p->updt_position('c', '8');
         if (p->get_code() == 'r' && p->get_file() == 'a' && p->get_rank() == 8) {
-            start_sqr.file = p->get_file();
-            start_sqr.rank = p->get_rank();
             p->updt_position('d', '8');
         }
+    }
+}
+
+void Black::undo_k_castle() {
+    for (auto& p : pieces) {
+        if (p->get_code() == 'r' && p->get_file() == 'f' && p->get_rank() == 8)
+            p->updt_position('h', 8);
+    }
+}
+
+void Black::undo_q_castle() {
+    for (auto& p : pieces) {
+        if (p->get_code() == 'r' && p->get_file() == 'd' && p->get_rank() == 8)
+            p->updt_position('a', 8);
     }
 }

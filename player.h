@@ -12,7 +12,6 @@ public:
     Player() { reset_en_passant_sqr(); }
     virtual ~Player() { delete_pieces(); }
 
-    Army* get_pieces() { return &pieces; }
     Piece* unique_piece_for_move(char SAN_piece, char SAN_col, char SAN_rank, 
                                  char SAN_spec_file, char SAN_spec_rank);
     Piece* attacker();
@@ -31,17 +30,18 @@ public:
     virtual void new_piece(char code, char file, int rank) = 0;
     virtual void uprise_last_cap() = 0;
     virtual bool king_is_last() = 0;
-    virtual bool can_k_castle() = 0;
-    virtual bool can_q_castle() = 0;
+    virtual bool can_k_castle(bool chk_empty_sqrs=true) = 0;
+    virtual bool can_q_castle(bool chk_empty_sqrs=true) = 0;
     virtual void castle_king_side() = 0;
     virtual void castle_queen_side() = 0;
+    virtual void undo_k_castle() = 0;
+    virtual void undo_q_castle() = 0;
 
-    Square get_start_sqr() const { return start_sqr; }
     Piece* get_piece(size_t i) { return pieces[i]; }
+    Army* get_pieces() { return &pieces; }
     size_t get_nb_pieces() const { return pieces.size(); }
 protected:
     Army pieces, elligible_pieces;
-    Square start_sqr;
     Piece last_captured;
 };
 
@@ -52,10 +52,12 @@ public:
     void new_piece(char code, char file, int rank) override;
     void uprise_last_cap() override;
     bool king_is_last() override;
-    bool can_k_castle() override;
-    bool can_q_castle() override;
+    bool can_k_castle(bool chk_empty_sqrs=true) override;
+    bool can_q_castle(bool chk_empty_sqrs=true) override;
     void castle_king_side() override;
     void castle_queen_side() override;
+    void undo_k_castle() override;
+    void undo_q_castle() override;
 private:
 };
 
@@ -66,10 +68,12 @@ public:
     void new_piece(char code, char file, int rank) override;
     void uprise_last_cap() override;
     bool king_is_last() override;
-    bool can_k_castle() override;
-    bool can_q_castle() override;
+    bool can_k_castle(bool chk_empty_sqrs=true) override;
+    bool can_q_castle(bool chk_empty_sqrs=true) override;
     void castle_king_side() override;
     void castle_queen_side() override;
+    void undo_k_castle() override;
+    void undo_q_castle() override;
 private:
 };
 
