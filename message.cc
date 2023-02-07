@@ -7,7 +7,9 @@
 void message::open_log_win() {
     #ifdef _WIN32
         system("start pwsh -nop -nol -c \"[console]::windowwidth=50; "
-               "[console]::windowheight=10; gc log.txt -Wait -Tail 30\"");
+               "[console]::windowheight=10; "
+               "[console]::bufferwidth=[console]::windowwidth " 
+               "gc log.txt -Wait -Tail 30\"");
     #elif __linux__
         system("gnome-terminal --geometry=50x10+500+400 -- tail -f log.txt ");
     #endif
