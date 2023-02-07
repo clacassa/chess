@@ -9,15 +9,16 @@
 
 void message::open_log_win() {
     #ifdef _WIN32
-        system("start pwsh -nop -nol -c \"[console]::windowwidth=50; "
+        system("start pwsh -nop -nol -c \"[console]::windowwidth=20; "
                "[console]::windowheight=10; "
                "[console]::bufferwidth=[console]::windowwidth; " 
                "[console]::title='Moves History'; "
-               "gc log.txt -Wait -Tail 30\"");
-        HWND handle = FindWindow(NULL, "Moves History");
+               "gc log.txt -Tail 30\"");
+        HWND handle = FindWindow(NULL, "History if moves");
         SetWindowPos(handle, NULL, 40, 50, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
     #elif __linux__
-        system("gnome-terminal --geometry=50x10+500+400 -- tail -f log.txt ");
+        system("chmod u+x mv_hist && "
+               "gnome-terminal --geometry=60x10+500+400 -- ./mv_hist");
     #endif
 }
 
@@ -36,7 +37,7 @@ void message::write_to_log(Move move, bool w_ply, bool chk, bool chkmt, char pro
     else if (chk)
         log << '+';
     log << " ";
-    if (move.num % 5 == 0 && !w_ply)
+    if (move.num % 4 == 0 && !w_ply)
         log << "\n";
 }
 
