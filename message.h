@@ -8,7 +8,7 @@ namespace message {
 
     const std::string log_file("log.txt");
     void open_log_win();
-    void write_to_log(Move move, bool w_ply, bool chk, bool chkmt, char prom_pc);
+    void write_to_log(Move move, bool w_ply, bool cap, bool chk, bool chkmt,char prom_pc);
     void erase_log_data();
 
     // Game flow messages

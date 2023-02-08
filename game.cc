@@ -29,10 +29,10 @@
 #include "game.h"
 
 Game::Game()
-:   last_move(0, '.', {blank, 0}),
+:   current_move(0, '.', {blank, 0}, {blank, 0}), last_move(current_move),
     SAN_piece(blank), SAN_file(blank), SAN_rank(blank), SAN_spec_file(blank),   
     SAN_spec_rank(blank), SAN_prom_pc(blank), SAN_cap(false), SAN_chk(false),
-    SAN_promote(false), w_turn(true), capture(false), q_castle(false), k_castle(false), check(false), w_en_psst(false), b_en_psst(false), nb_move(1)
+    SAN_promote(false), w_turn(true), capture(false), q_castle(false), k_castle(false), check(false), checkmate(false), w_en_psst(false), b_en_psst(false), nb_move(1)
 {
     message::erase_log_data();
 }
@@ -43,13 +43,11 @@ void Game::game_flow(bool as_black, bool pvp, bool cvc) {
 
     updt_board();
     fen_verify_checks();
-    if (pvp)
-        print_position(w_turn);
+    print_position(w_turn);
 
     std::wstring SAN;
     while (true) {
 
-        reset_san_variables();
         if (!pvp && as_black) {
             bool game_over(computer_play());
             if(game_over)
@@ -59,8 +57,6 @@ void Game::game_flow(bool as_black, bool pvp, bool cvc) {
         }
 
         if (!cvc) {
-            if (!pvp)
-                print_position(w_turn);
             while (true) {
                 reset_san_variables();
                 prompt_move();
@@ -90,7 +86,6 @@ void Game::game_flow(bool as_black, bool pvp, bool cvc) {
                     if (end)
                         return;
                     else {
-                        reset_san_variables();
                         if (w_turn)
                             ++nb_move;
                         updt_board();
@@ -113,10 +108,15 @@ void Game::game_flow(bool as_black, bool pvp, bool cvc) {
             if(game_over)
                 break;
             updt_board();
+            print_position(w_turn);
         }
 
-        if (cvc)
+        if (cvc) {
+            ++nb_move;
             print_position(w_turn);
+        }
+
+        reset_san_variables();
     }
 }
 
@@ -126,8 +126,8 @@ void Game::prompt_move() {
 }
 
 void Game::print_position(bool w_ply) {
-    char p(last_move.piece), f(last_move.sqr.file);
-    int r(last_move.sqr.rank);
+    char p(current_move.piece), f(current_move.target.file);
+    int r(current_move.target.rank);
     if (r != 0) {
         std::wcout << "\n  " << nb_move - 1;
         if (w_turn)
@@ -136,7 +136,18 @@ void Game::print_position(bool w_ply) {
             std::wcout << ". ";
         if (p != 'P' && p != 'p')
             std::wcout << p;
-        std::wcout << f << r << "\n";
+        else if (capture)
+            std::wcout << current_move.start.file;
+        if (capture)
+            std::wcout << 'x';
+        std::wcout << f << r;
+        if (SAN_promote)
+            std::wcout << '=' << SAN_prom_pc;
+        if (checkmate)
+            std::wcout << '#';
+        else if (check)
+            std::wcout << '+';
+        std::wcout << "\n";
     }
 
     board_print_board(w_ply, start, target, check);
@@ -147,6 +158,12 @@ void Game::updt_board() {
     empty_board();
     white.write_pieces_on_board();
     black.write_pieces_on_board();
+    for (size_t i(0); i < white.get_nb_pieces(); ++i) {
+        white.get_piece(i)->updt_cov_sqrs();
+    }
+    for (size_t i(0); i < black.get_nb_pieces(); ++i) {
+        black.get_piece(i)->updt_cov_sqrs();
+    }
 }
 
 bool Game::parse_fen(std::string fen) {
@@ -421,6 +438,7 @@ void Game::reset_san_variables() {
     q_castle = false;
     k_castle = false;
     check = false;
+    checkmate = false;
     SAN_chk = false;
     SAN_cap = false;
     SAN_prom_pc = blank;
@@ -446,7 +464,7 @@ bool Game::is_move_legal(Piece* p, char trgt_file, int trgt_rank, bool w_ply) {
             || (!q_castle && trgt_file == p->get_file() - 2))
             return false;
     }
-
+    
     capture = false;
     if (is_enemy(p->get_code(), trgt_file, trgt_rank)
         || is_en_passant_sqr(trgt_file, trgt_rank))
@@ -489,6 +507,7 @@ bool Game::handle_check(Piece* piece, char trgt_file, int trgt_rank, bool capt,b
                 return false;
         }
     }
+
     // Silently execute the move to see if it leads to a rule violation.
     piece->updt_position(trgt_file, trgt_rank,  true);
 
@@ -528,8 +547,9 @@ bool Game::handle_check(Piece* piece, char trgt_file, int trgt_rank, bool capt,b
     }else {
         updt_board();
         if ((w_p && black.attacker() != nullptr)
-            || (!w_p && white.attacker() != nullptr))
+            || (!w_p && white.attacker() != nullptr)) {
             illegal = true;
+        }
     }
     // Replace the piece on its square.
     piece->updt_position(start_sqr.file, start_sqr.rank, true);
@@ -541,32 +561,35 @@ bool Game::handle_check(Piece* piece, char trgt_file, int trgt_rank, bool capt,b
 
 bool Game::process_move(Piece* p, char trgt_file, int trgt_rank, bool w_ply, bool test) {
 
+    bool e_p(is_en_passant_sqr(trgt_file, trgt_rank));
+
+    last_move = current_move;
     // Save in memory the start and target squares of the active piece
     start = {p->get_file(), p->get_rank()};
     target = {trgt_file, trgt_rank};
-    last_move = {nb_move, p->get_code(), target};
+    current_move = {nb_move, p->get_code(), start, target};
+    if (!w_ply)
+        current_move.piece += upcase_shift;
+
     
     // Update position and in-range squares of the active piece
-    if (test)
-        p->updt_position(trgt_file, trgt_rank, true);
-    else
-        p->updt_position(trgt_file, trgt_rank);
+    p->updt_position(trgt_file, trgt_rank, test);
     p->updt_cov_sqrs();
     updt_board();
 
     // Castling
     if (w_ply) {
         if (k_castle) {
-            white.castle_king_side();
+            white.castle_king_side(test);
         }
         else if (q_castle) {
-            white.castle_queen_side();
+            white.castle_queen_side(test);
         }
     }else if (k_castle) {
-        black.castle_king_side();
+        black.castle_king_side(test);
     }
     else if (q_castle) {
-        black.castle_queen_side();
+        black.castle_queen_side(test);
     }
 
     // Detect any en-passant square
@@ -579,27 +602,26 @@ bool Game::process_move(Piece* p, char trgt_file, int trgt_rank, bool w_ply, boo
     // Hide it, i.e. make it inactive and unseeable while keeping it in memory
     // when this function is called by 'compute_moves'
     if (capture) {
-        if ((w_en_psst || b_en_psst) && !is_enemy(w_ply, trgt_file, trgt_rank)) {
-            if (w_ply) {
+        ++t_result.n_cptrs;
+        if (w_turn) {
+            if (e_p) {
                 if (test)
-                    black.hide_piece(trgt_file, trgt_rank - 1);
+                    black.hide_piece(trgt_file, trgt_rank-1);
                 else
-                    black.piece_captured(trgt_file, trgt_rank - 1);
-            }
-            else {
-                if (test)
-                    white.hide_piece(trgt_file, trgt_rank + 1);
-                else
-                    white.piece_captured(trgt_file, trgt_rank + 1);
-            }
-        }else {
-            if (w_ply) {
+                    black.piece_captured(trgt_file, trgt_rank-1);
+            }else {
                 if (test)
                     black.hide_piece(trgt_file, trgt_rank);
                 else
                     black.piece_captured(trgt_file, trgt_rank);
             }
-            else {
+        }else {
+            if (e_p) {
+                if (test)
+                    white.hide_piece(trgt_file, trgt_rank+1);
+                else
+                    white.piece_captured(trgt_file, trgt_rank+1);
+            }else {
                 if (test)
                     white.hide_piece(trgt_file, trgt_rank);
                 else
@@ -617,6 +639,7 @@ bool Game::process_move(Piece* p, char trgt_file, int trgt_rank, bool w_ply, boo
             black.new_piece(SAN_prom_pc - upcase_shift, trgt_file, trgt_rank);
         }
     }else if (w_ply && p->get_code() == 'P' && trgt_rank == 8) {
+        ++t_result.n_proms;
         if (test)
             white.hide_piece(trgt_file, trgt_rank);
         else
@@ -624,6 +647,7 @@ bool Game::process_move(Piece* p, char trgt_file, int trgt_rank, bool w_ply, boo
         white.new_piece('Q', trgt_file, trgt_rank);
         SAN_prom_pc = 'Q';
     }else if (!w_ply && p->get_code() == 'p' && trgt_rank == 1) {
+        ++t_result.n_proms;
         if (test)
             black.hide_piece(trgt_file, trgt_rank);
         else
@@ -636,6 +660,7 @@ bool Game::process_move(Piece* p, char trgt_file, int trgt_rank, bool w_ply, boo
         if (white.attacker()) {
             attacker = white.attacker();
             check = true;
+            ++t_result.n_chks;
         }else {
             attacker = nullptr;
             check = false;
@@ -646,6 +671,7 @@ bool Game::process_move(Piece* p, char trgt_file, int trgt_rank, bool w_ply, boo
         if (black.attacker()) {
             attacker = black.attacker();
             check = true;
+            ++t_result.n_chks;
         }else {
             attacker = nullptr;
             check = false;
@@ -663,27 +689,33 @@ bool Game::process_move(Piece* p, char trgt_file, int trgt_rank, bool w_ply, boo
         black.reset_en_passant_sqr();
         b_en_psst = false;
     }
-
-    capture = false;
     
     if (check) {
         if (is_checkmate(w_ply)) {
-            message::write_to_log(last_move, w_ply, check, true, SAN_prom_pc);
-            message::checkmate(w_ply);
-            updt_board();
-            print_position(!w_ply);
+            checkmate = true;
+            if (!test) {
+                message::write_to_log(current_move, w_ply, capture, check, checkmate,
+                                                                        SAN_prom_pc);
+                message::checkmate(w_ply);
+                updt_board();
+                print_position(!w_ply);
+            }
+            ++t_result.n_chkmates;
             return true;
         }
     }else if (is_draw(w_ply)) {
         updt_board();
-        print_position(!w_ply);
+        if (!test)
+            print_position(!w_ply);
         return true;
     }
 
-    message::write_to_log(last_move, w_ply, check, false, SAN_prom_pc);
+    if (!test)
+        message::write_to_log(current_move, w_ply, capture, check, checkmate, 
+                                                                   SAN_prom_pc);
 
-    if (test)
-        print_position(true);
+    // if (test && !w_ply)
+    //     print_position(true);
 
     return false;
 }
@@ -756,6 +788,7 @@ void Game::resign() {
 }
 
 bool Game::computer_play() {
+    reset_san_variables();
     Piece* p(nullptr);
     if (w_turn) {
         size_t n(white.get_nb_pieces());
@@ -825,8 +858,14 @@ bool Game::computer_play() {
 
 void Game::test_gen_moves(int max_depth) {
     for (int i(1); i <= max_depth; ++i) {
-        std::wcout << "plies: " << i << "\tpositions: "
-                   << msg_color << compute_moves(i, true) << reset_sgr << "\n";
+        t_result = {0, 0, 0, 0, 0};
+        std::wcout << "depth: " << i
+                   << "\tnodes: " << msg_color << compute_moves(i, true) << reset_sgr
+                   << "\tcaptures: " << msg_color << t_result.n_cptrs << reset_sgr
+                   << "\tcastles: " << msg_color << t_result.n_cstls << reset_sgr
+                   << "\tpromotions: " << msg_color << t_result.n_proms << reset_sgr
+                   << "\tchecks: " << msg_color << t_result.n_chks << reset_sgr
+                   << "\tcheckmates: " << msg_color << t_result.n_chkmates << reset_sgr << "\n";
     }
 }
 
@@ -842,12 +881,14 @@ int Game::compute_moves(int depth, bool w_ply) {
     if (w_ply) {
         size_t n(white.get_nb_pieces());
         for (size_t i(0); i < n; ++i) {
+            if (depth == 5)
+                std::wcout << msg_color << i+1 << "/" << n << "\n";
             p = white.get_piece(i);
             if (p->get_hidden())
                 continue;
-            p->updt_cov_sqrs();
+            
             for (auto& sq : p->get_cov_sqrs()) {
-
+                
                 k_castle = false;
                 q_castle = false;
                 bool k_cstl(false), q_cstl(false);
@@ -869,9 +910,12 @@ int Game::compute_moves(int depth, bool w_ply) {
                     n_positions += compute_moves(depth - 1, !w_ply);
 
                     if (k_cstl)
-                        white.undo_k_castle();
+                        white.undo_k_castle(true);
                     else if (q_cstl)
-                        white.undo_q_castle();
+                        white.undo_q_castle(true);
+                    
+                    if (k_cstl || q_cstl)
+                        ++t_result.n_cstls;
 
                     p->updt_position(sf, sr, true);
                     p->reveal();
@@ -888,7 +932,7 @@ int Game::compute_moves(int depth, bool w_ply) {
             p = black.get_piece(i);
             if (p->get_hidden())
                 continue;
-            p->updt_cov_sqrs();
+
             for (auto& sq : p->get_cov_sqrs()) {
 
                 k_castle = false;
@@ -912,9 +956,12 @@ int Game::compute_moves(int depth, bool w_ply) {
                     n_positions += compute_moves(depth - 1, !w_ply);
 
                     if (k_cstl)
-                        black.undo_k_castle();
+                        black.undo_k_castle(true);
                     else if (q_cstl)
-                        black.undo_q_castle();
+                        black.undo_q_castle(true);
+
+                    if (k_cstl || q_cstl)
+                        ++t_result.n_cstls;
 
                     p->updt_position(sf, sr, true);
                     p->reveal();

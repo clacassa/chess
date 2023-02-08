@@ -22,14 +22,19 @@ void message::open_log_win() {
     #endif
 }
 
-void message::write_to_log(Move move, bool w_ply, bool chk, bool chkmt, char prom_pc) {
+void message::write_to_log(Move move, bool w_ply, bool cap, bool chk, bool chkmt, 
+                                                                      char prom_pc) {
     std::ofstream log;
     log.open(log_file, std::ios_base::app);
     if (w_ply)
         log << move.num << ". ";
     if (move.piece != 'P' && move.piece != 'p')
         log << move.piece;
-    log << move.sqr.file << move.sqr.rank;
+    else if (cap)
+        log << move.start.file;
+    if (cap)
+        log << 'x';
+    log << move.target.file << move.target.rank;
     if (prom_pc != blank)
         log << '=' << prom_pc;
     if (chkmt)

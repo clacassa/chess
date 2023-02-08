@@ -24,6 +24,7 @@ public:
     void piece_captured(char SAN_file, int SAN_rank);
     void delete_pieces();
 
+
     void reset_en_passant_sqr();
     bool has_en_passant_sqr();
 
@@ -32,10 +33,10 @@ public:
     virtual bool king_is_last() = 0;
     virtual bool can_k_castle(bool chk_empty_sqrs=true) = 0;
     virtual bool can_q_castle(bool chk_empty_sqrs=true) = 0;
-    virtual void castle_king_side() = 0;
-    virtual void castle_queen_side() = 0;
-    virtual void undo_k_castle() = 0;
-    virtual void undo_q_castle() = 0;
+    virtual void castle_king_side(bool silent=false) = 0;
+    virtual void castle_queen_side(bool silent=false) = 0;
+    virtual void undo_k_castle(bool silent=false) = 0;
+    virtual void undo_q_castle(bool silent=false) = 0;
 
     Piece* get_piece(size_t i) { return pieces[i]; }
     Army* get_pieces() { return &pieces; }
@@ -54,10 +55,10 @@ public:
     bool king_is_last() override;
     bool can_k_castle(bool chk_empty_sqrs=true) override;
     bool can_q_castle(bool chk_empty_sqrs=true) override;
-    void castle_king_side() override;
-    void castle_queen_side() override;
-    void undo_k_castle() override;
-    void undo_q_castle() override;
+    void castle_king_side(bool silent=false) override;
+    void castle_queen_side(bool silent=false) override;
+    void undo_k_castle(bool silent=false) override;
+    void undo_q_castle(bool silent=false) override;
 private:
 };
 
@@ -70,10 +71,10 @@ public:
     bool king_is_last() override;
     bool can_k_castle(bool chk_empty_sqrs=true) override;
     bool can_q_castle(bool chk_empty_sqrs=true) override;
-    void castle_king_side() override;
-    void castle_queen_side() override;
-    void undo_k_castle() override;
-    void undo_q_castle() override;
+    void castle_king_side(bool silent=false) override;
+    void castle_queen_side(bool silent=false) override;
+    void undo_k_castle(bool silent=false) override;
+    void undo_q_castle(bool silent=false) override;
 private:
 };
 

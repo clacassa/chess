@@ -86,8 +86,9 @@ void Player::reveal_piece(char file, int rank) {
 
 void Player::hide_piece(char file, int rank) {
     for (auto& p : pieces) {
-        if (p->get_file() == file && p->get_rank() == rank)
+        if (p->get_file() == file && p->get_rank() == rank) {
             p->hide();
+        }
     }
 }
 
@@ -230,37 +231,36 @@ bool White::can_q_castle(bool chk_empty_sqrs) {
     return true;
 }
 
-void White::castle_king_side() {
+void White::castle_king_side(bool silent) {
     for (auto& p : pieces) {
         if (p->get_code() == 'K')
-            p->updt_position('g', '1');
+            silent ? p->updt_position('g', 1, true) : p->updt_position('g', 1);
         if (p->get_code() == 'R' && p->get_file() == 'h' && p->get_rank() == 1) {
-            p->updt_position('f', '1');
+            silent ? p->updt_position('f', 1, true) : p->updt_position('f', 1);
         }
     }
 }
 
-void White::castle_queen_side() {
+void White::castle_queen_side(bool silent) {
     for (auto& p : pieces) {
         if (p->get_code() == 'K')
-            p->updt_position('c', '1');
-        if (p->get_code() == 'R' && p->get_file() == 'a' && p->get_rank() == 1) {
-            p->updt_position('d', '1');
-        }
+            silent ? p->updt_position('c', 1, true) : p->updt_position('c', 1);
+        if (p->get_code() == 'R' && p->get_file() == 'a' && p->get_rank() == 1)
+            silent ? p->updt_position('d', 1, true) : p->updt_position('d', 1);
     }
 }
 
-void White::undo_k_castle() {
+void White::undo_k_castle(bool silent) {
     for (auto& p : pieces) {
         if (p->get_code() == 'R' && p->get_file() == 'f' && p->get_rank() == 1)
-            p->updt_position('h', 1);
+            silent ? p->updt_position('h', 1, true) : p->updt_position('h', 1);
     }
 }
 
-void White::undo_q_castle() {
+void White::undo_q_castle(bool silent) {
     for (auto& p : pieces) {
         if (p->get_code() == 'R' && p->get_file() == 'd' && p->get_rank() == 1)
-            p->updt_position('a', 1);
+            silent ? p->updt_position('a', 1, true) : p->updt_position('a', 1);
     }
 }
 
@@ -353,36 +353,35 @@ bool Black::can_q_castle(bool chk_empty_sqrs) {
     return true;
 }
 
-void Black::castle_king_side() {
+void Black::castle_king_side(bool silent) {
     for (auto& p : pieces) {
         if (p->get_code() == 'k')
-            p->updt_position('g', '8');
+            silent ? p->updt_position('g', 8, true) : p->updt_position('g', 8);
         if (p->get_code() == 'r' && p->get_file() == 'h' && p->get_rank() == 8) {
-            p->updt_position('f', '8');
+            silent ? p->updt_position('f', 8, true) : p->updt_position('f', 8);
         }
     }
 }
 
-void Black::castle_queen_side() {
+void Black::castle_queen_side(bool silent) {
     for (auto& p : pieces) {
         if (p->get_code() == 'k')
-            p->updt_position('c', '8');
-        if (p->get_code() == 'r' && p->get_file() == 'a' && p->get_rank() == 8) {
-            p->updt_position('d', '8');
-        }
+            silent ? p->updt_position('c', 8, true) : p->updt_position('c', 8);
+        if (p->get_code() == 'r' && p->get_file() == 'a' && p->get_rank() == 8)
+            silent ? p->updt_position('d', 8, true) : p->updt_position('d', 8);
     }
 }
 
-void Black::undo_k_castle() {
+void Black::undo_k_castle(bool silent) {
     for (auto& p : pieces) {
         if (p->get_code() == 'r' && p->get_file() == 'f' && p->get_rank() == 8)
-            p->updt_position('h', 8);
+            silent ? p->updt_position('h', 8, true) : p->updt_position('h', 8);
     }
 }
 
-void Black::undo_q_castle() {
+void Black::undo_q_castle(bool silent) {
     for (auto& p : pieces) {
         if (p->get_code() == 'r' && p->get_file() == 'd' && p->get_rank() == 8)
-            p->updt_position('a', 8);
+            silent ? p->updt_position('a', 8, true) : p->updt_position('a', 8);
     }
 }

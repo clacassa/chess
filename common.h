@@ -13,10 +13,16 @@ struct Square {
 };
 
 struct Move {
-    Move(int _num, char _piece, Square _sqr) { num = _num; piece = _piece; sqr = _sqr; }
+    Move(int _num, char _piece, Square _start, Square _target) {
+        num = _num;
+        piece = _piece;
+        start = _start;
+        target = _target;
+    }
     int num;
     char piece;
-    Square sqr;
+    Square start;
+    Square target;
 };
 
 constexpr size_t SAN_min_char(2);
