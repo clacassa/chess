@@ -36,6 +36,8 @@ void version(char * prog_name);
 bool verify_FEN_file(std::string FEN_filename);
 bool load_FEN_file(Game& game, std::string FEN_filename);
 
+bool is_string_an_int(std::string str);
+
 int main(int argc, char ** argv) {
     #ifdef _WIN32
         _setmode(_fileno(stdout), _O_U16TEXT);
@@ -66,19 +68,45 @@ int parse_cli_args(int argc, char ** argv, Game& game, bool& black, bool& pvp,bo
         usage(argv[0]);
         std::wcout << "\n";
     }
+
     if (argc > 4)
         return 1;
     if (argc >= 2) {
         for (int i(1); i < argc; ++i) {
-            if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--test") == 0) {
+            if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--perft") == 0) {
+
+                bool depth_arg(false), fen_arg(false);
+
                 if (i+1 < argc) {
-                    FEN_filename = argv[i+1];
+                    if (is_string_an_int(argv[i+1]))
+                        depth_arg = true;
+                    else {
+                        FEN_filename = argv[i+1];
+                        if (!load_FEN_file(game, FEN_filename))
+                            return 1;
+                        else
+                            fen_arg = true;
+                    }
+                }
+
+                if (i+2 < argc) {
+                    FEN_filename = argv[i+2];
                     if (!load_FEN_file(game, FEN_filename))
                         return 1;
-                }else
+                    else
+                        fen_arg = true;
+                }
+
+                if (!fen_arg)
                     game.parse_fen(ini_board);
+
                 game.updt_board();
-                game.test_gen_moves();
+
+                if (depth_arg)
+                    game.test_gen_moves(std::stoi(argv[i+1]));
+                else
+                    game.test_gen_moves();
+
                 return 2;
             }
             else if (strcmp(argv[i], "-b") == 0 || strcmp(argv[i], "--black") == 0) {
@@ -118,9 +146,9 @@ int parse_cli_args(int argc, char ** argv, Game& game, bool& black, bool& pvp,bo
 
 void usage(char * prog_name) {
     std::wcout << "***CHESS in the terminal***\n"
-               << "usage: " << prog_name << " [options] [fen-file]\n"
+               << "usage: " << prog_name << " [options] [depth=5] [fen-file]\n"
                << "options:\n"
-               << "  -t, --test\t\tPrint the number of positions up to 6 plies from\n"
+               << "  -t, --perft\t\tPerform a perft test up to depth plies from\n"
                   "\t\t\t  the specified FEN, or from the default board if no file\n"
                   "\t\t\t  is given, and then exit.\n"
                << "  -b, --black\t\tTo play as Black.\n"
@@ -164,6 +192,14 @@ bool load_FEN_file(Game& game, std::string FEN_filename) {
         ss << FEN_file.rdbuf();
         FEN_string = ss.str();
         game.parse_fen(FEN_string);
+    }
+    return true;
+}
+
+bool is_string_an_int(std::string str) {
+    for (size_t i(0); i < str.length(); ++i) {
+        if (!isdigit(str[i]))
+            return false;
     }
     return true;
 }

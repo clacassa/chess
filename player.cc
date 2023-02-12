@@ -65,17 +65,17 @@ void Player::write_pieces_on_board() {
     }
 }
 
-void Player::new_piece(char code, char file, char rank) {
-    switch (code) {
-        case 'B': pieces.push_back(new Bishop(code, file, rank)); break;
-        case 'K': pieces.push_back(new King(code, file, rank)); break;
-        case 'N': pieces.push_back(new Knight(code, file, rank)); break;
-        case 'P': pieces.push_back(new Pawn(code, file, rank)); break;
-        case 'Q': pieces.push_back(new Queen(code, file, rank)); break;
-        case 'R': pieces.push_back(new Rook(code, file, rank)); break;
-        default: std::wcout << "Couldn't add a new piece to a player\n"; break;
-    }
-}
+// void Player::new_piece(char code, char file, char rank) {
+//     switch (code) {
+//         case 'B': pieces.push_back(new Bishop(code, file, rank)); break;
+//         case 'K': pieces.push_back(new King(code, file, rank)); break;
+//         case 'N': pieces.push_back(new Knight(code, file, rank)); break;
+//         case 'P': pieces.push_back(new Pawn(code, file, rank)); break;
+//         case 'Q': pieces.push_back(new Queen(code, file, rank)); break;
+//         case 'R': pieces.push_back(new Rook(code, file, rank)); break;
+//         default: std::wcout << "Couldn't add a new piece to a player\n"; break;
+//     }
+// }
 
 void Player::reveal_piece(char file, int rank) {
     for (auto& p : pieces) {
@@ -99,6 +99,7 @@ void Player::piece_captured(char SAN_file, char SAN_rank) {
             last_captured = *pieces[i];
             delete pieces[i];
             pieces.erase(pieces.begin() + i);
+            track_pieces();
             return;
         }
     }
@@ -111,6 +112,7 @@ void Player::piece_captured(char SAN_file, int SAN_rank) {
             last_captured = *pieces[i];
             delete pieces[i];
             pieces.erase(pieces.begin() + i);
+            track_pieces();
             return;
         }
     }
@@ -142,6 +144,118 @@ bool Player::has_en_passant_sqr() {
     return false;
 }
 
+void Player::track_pieces() {
+
+    tracker.king.clear();
+    tracker.queen.clear();
+    tracker.rook.clear();
+    tracker.bishop.clear();
+    tracker.knight.clear();
+    tracker.pawn.clear();
+
+    for (size_t i(0); i < pieces.size(); ++i) {
+        char code(pieces[i]->get_code());
+        switch (code) {
+            case 'K':
+            case 'k':
+                tracker.king.push_back(i);
+                break;
+            case 'Q':
+            case 'q':
+                tracker.queen.push_back(i);
+                break;
+            case 'R':
+            case 'r':
+                tracker.rook.push_back(i);
+                break;
+            case 'B':
+            case 'b':
+                tracker.bishop.push_back(i);
+                break;
+            case 'N':
+            case 'n':
+                tracker.knight.push_back(i);
+                break;
+            case 'P':
+            case 'p':
+                tracker.pawn.push_back(i);
+                break;
+            default:
+                std::wcout << "Unable to track a piece : " << code << "\n";
+                break;
+        }
+    }
+}
+
+Piece* Player::find_piece(char code, char file, int rank) {
+
+    switch (code) {
+        case 'K':
+        case 'k':
+            for (auto i : tracker.king) {
+                if (pieces[i]->get_file() == file && pieces[i]->get_rank() == rank)
+                    return pieces[i];
+            }
+            std::wcout << "no king\n";
+            break;
+        case 'Q':
+        case 'q':
+            for (auto i : tracker.queen) {
+                if (pieces[i]->get_file() == file && pieces[i]->get_rank() == rank)
+                    return pieces[i];
+            }
+            std::wcout << "no queen : " << file << rank << "\n";
+            break;
+        case 'R':
+        case 'r':
+            for (auto i : tracker.rook) {
+                if (pieces[i]->get_file() == file && pieces[i]->get_rank() == rank)
+                    return pieces[i];
+            }
+            std::wcout << "no rook\n";
+            break;
+        case 'B':
+        case 'b':
+            for (auto i : tracker.bishop) {
+                if (pieces[i]->get_file() == file && pieces[i]->get_rank() == rank)
+                    return pieces[i];
+            }
+            std::wcout << "no bishop\n";
+            break;
+        case 'N':
+        case 'n':
+            for (auto i : tracker.knight) {
+                if (pieces[i]->get_file() == file && pieces[i]->get_rank() == rank)
+                    return pieces[i];
+            }
+            std::wcout << "no knight\n";
+            break;
+        case 'P':
+        case 'p':
+            for (auto i : tracker.pawn) {
+                if (pieces[i]->get_file() == file && pieces[i]->get_rank() == rank)
+                    return pieces[i];
+            }
+            std::wcout << "no pawn\n";
+            break;
+        default:
+            std::wcout << "Incorrect piece encoding : " << code << "\n";
+            break;
+    }
+    return nullptr;
+}
+
+Piece* Player::find_cap_piece(char file, int rank) {
+    for (auto& p : pieces) {
+        if (p->get_file() == file && p->get_rank() == rank)
+            return p;
+    }
+    return nullptr;
+}
+
+/***********
+ *  WHITE  *
+ ***********/
 void White::new_piece(char code, char file, int rank) {
     switch (code) {
         case 'B': pieces.push_back(new Bishop(code, file, rank)); break;
@@ -152,6 +266,7 @@ void White::new_piece(char code, char file, int rank) {
         case 'R': pieces.push_back(new Rook(code, file, rank)); break;
         default: std::wcout << "Couldn't add a new piece to White\n"; break;
     }
+    track_pieces();
 }
 
 void White::uprise_last_cap() {
@@ -264,6 +379,9 @@ void White::undo_q_castle(bool silent) {
     }
 }
 
+/***********
+ *  BLACK  *
+ ***********/
 void Black::new_piece(char code, char file, int rank) {
     switch (code) {
         case 'b': pieces.push_back(new Bishop(code, file, rank)); break;

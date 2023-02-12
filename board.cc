@@ -64,6 +64,10 @@ void write_en_passant_sqr(char file, int rank) {
     board[rank-1][int('h')-int(file)] = en_passant_sqr;
 }
 
+void clear_en_passant_sqr(char file, int rank) {
+    board[rank-1][int('h')-int(file)] = '.';
+}
+
 void clear_en_passant_sqr() {
     for (auto& rank : board) {
         for (auto& sq : rank) {
@@ -119,7 +123,8 @@ bool is_enemy(bool w_to_play, char file, int rank) {
 }
 
 bool is_empty(char file, int rank) {
-    return (board[rank-1][int('h')-int(file)] == '.');
+    char c(board[rank-1][int('h')-int(file)]);
+    return (c == '.' || c == en_passant_sqr);
 }
 
 bool is_enemy_king(char code, char file, int rank) {

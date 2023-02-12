@@ -17,20 +17,25 @@ public:
     Piece* attacker();
 
     void write_pieces_on_board();
-    void new_piece(char code, char file, char rank);
+    // void new_piece(char code, char file, char rank);
     void reveal_piece(char file, int rank);
     void hide_piece(char file, int rank);
-    void piece_captured(char SAN_file, char SAN_rank);
-    void piece_captured(char SAN_file, int SAN_rank);
+    void piece_captured(char file, char rank);
+    void piece_captured(char file, int rank);
     void delete_pieces();
-
 
     void reset_en_passant_sqr();
     bool has_en_passant_sqr();
 
+    void track_pieces();
+    Piece* find_piece(char code, char file, int rank);
+    Piece* find_cap_piece(char file, int rank);
+
     virtual void new_piece(char code, char file, int rank) = 0;
+
     virtual void uprise_last_cap() = 0;
     virtual bool king_is_last() = 0;
+
     virtual bool can_k_castle(bool chk_empty_sqrs=true) = 0;
     virtual bool can_q_castle(bool chk_empty_sqrs=true) = 0;
     virtual void castle_king_side(bool silent=false) = 0;
@@ -41,7 +46,19 @@ public:
     Piece* get_piece(size_t i) { return pieces[i]; }
     Army* get_pieces() { return &pieces; }
     size_t get_nb_pieces() const { return pieces.size(); }
+
 protected:
+
+    struct PieceTracker {
+        std::vector<size_t> king;
+        std::vector<size_t> queen;
+        std::vector<size_t> rook;
+        std::vector<size_t> bishop;
+        std::vector<size_t> knight;
+        std::vector<size_t> pawn;
+    };
+
+    PieceTracker tracker;
     Army pieces, elligible_pieces;
     Piece last_captured;
 };

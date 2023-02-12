@@ -14,6 +14,7 @@ void board_print_board(bool white_pov, Square start_sqr, Square target_sqr,
 void write_piece(char code, char file, int rank);
 void empty_board();
 void write_en_passant_sqr(char file, int rank);
+void clear_en_passant_sqr(char file, int rank);
 void clear_en_passant_sqr();
 
 bool is_en_passant_sqr(char file, int rank);

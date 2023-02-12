@@ -10,6 +10,7 @@ const std::string ini_board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq 
 
 struct TestResult {
     int n_cptrs;
+    int n_ep;
     int n_cstls;
     int n_proms;
     int n_chks;
@@ -22,7 +23,7 @@ public:
     virtual ~Game();
     void game_flow(bool black, bool pvp, bool cvc);
     void prompt_move();
-    void print_position(bool w_ply);
+    void print_position(bool w_ply, bool cvc=false);
     void updt_board();
 
     bool parse_fen(std::string fen);
@@ -38,13 +39,12 @@ public:
 
     bool computer_play();
 
-    void test_gen_moves(int max_depth=6);
+    void test_gen_moves(int max_depth=5);
 private:
     White white;
     Black black;
     Square start, target;
     Move current_move, last_move;
-    Piece* attacker;
     TestResult t_result;
 
     std::wstring SAN;
@@ -53,20 +53,25 @@ private:
 
     bool w_turn, capture, q_castle, k_castle, check, checkmate, w_en_psst, b_en_psst;
 
-    int nb_move;
+    int nb_move, perft_depth;
     
     void piece_from_fen(char code, char file, int rank);
 
+    void make_move(Piece* p, Move move, bool w_ply, bool& k_cstl, bool& q_cstl);
+    void unmake_move(Piece* p, Move move, bool w_ply, bool k_cstl, bool q_cstl);
     bool is_move_legal(Piece* p, char trgt_file, int trgt_rank, bool w_ply);
     bool handle_check(Piece* piece, char trgt_file, int trgt_rank, bool capt, bool w_p);
-    bool process_move(Piece* p, char trgt_file, int trgt_rank, bool w_ply, 
-                                                               bool test=false);
+    bool process_move(Piece* p, char trgt_file, int trgt_rank, bool w_ply,
+                                              char prom_piece, bool test=false);
     bool is_checkmate(bool w_ply);
     bool is_draw(bool w_ply);
 
     void reset_san_variables();
 
-    int compute_moves(int depth=1, bool w_turn=true);
+    int divide(int depth, bool w_ply);
+    int compute_moves(int depth=1, bool w_ply=true, Square ep_sqr={blank, 9});
+
+    std::vector<Move> generate_moves(bool w_ply);
 };
 
 #endif

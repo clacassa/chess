@@ -56,7 +56,7 @@ void Piece::updt_position(char SAN_file, int SAN_rank, bool silent) {
 }
 
 bool Piece::attacking_enemy_king() const {
-    for (auto sq : cov_sqrs) {
+    for (auto sq : get_atck_sqrs()) {
         if (is_enemy_king(code, sq.file, sq.rank)) return true;
     }
     return false;
@@ -214,14 +214,18 @@ void Pawn::updt_cov_sqrs() {
     if (char(file-1) >= 'a') {
         if (is_enemy(code, char(file-1), r))
             cov_sqrs.push_back({char(file-1), r});
-        if (is_en_passant_sqr(char(file-1), r))
-            cov_sqrs.push_back({char(file-1), r});
+        if ((code == 'P' && r == 6) || (code == 'p' && r == 2)) {
+            if (is_en_passant_sqr(char(file-1), r))
+                cov_sqrs.push_back({char(file-1), r});
+        }
     }
     if (char(file+1) <= 'h') {
         if (is_enemy(code, char(file+1), r)) 
             cov_sqrs.push_back({char(file+1), r});
-        if (is_en_passant_sqr(char(file+1), r))
-            cov_sqrs.push_back({char(file+1), r});
+        if ((code == 'P' && r == 6) || (code == 'p' && r == 2)) {
+            if (is_en_passant_sqr(char(file+1), r))
+                cov_sqrs.push_back({char(file+1), r});
+        }
     }
     if (code == 'P') 
         ++r;
@@ -237,7 +241,7 @@ void Pawn::updt_cov_sqrs() {
 }
 
 void Pawn::updt_position(char SAN_file, char SAN_rank, bool silent) {
-    if (!has_moved && !silent) {
+    if (!has_moved) {
         if (code == 'P' && SAN_rank - '0' == rank + 2) {
             has_en_passant = true;
             write_en_passant_sqr(file, rank+1);
@@ -254,7 +258,7 @@ void Pawn::updt_position(char SAN_file, char SAN_rank, bool silent) {
 }
 
 void Pawn::updt_position(char SAN_file, int SAN_rank, bool silent) {
-    if (!has_moved && !silent) {
+    if (!has_moved) {
         if (code == 'P' && SAN_rank == rank + 2) {
             has_en_passant = true;
             write_en_passant_sqr(file, rank+1);
@@ -272,6 +276,15 @@ void Pawn::updt_position(char SAN_file, int SAN_rank, bool silent) {
 
 void Pawn::clear_en_passant() {
     has_en_passant = false;
+}
+
+std::vector<Square> Pawn::get_atck_sqrs() const {
+    std::vector<Square> attacked_sqrs;
+    for (auto sq : cov_sqrs) {
+        if (sq.file != this->file)
+            attacked_sqrs.push_back({sq.file, sq.rank});
+    }
+    return attacked_sqrs;
 }
 
 void rook_range(std::vector<Square>& covered_sqrs, char code, char file, int rank) {

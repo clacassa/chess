@@ -30,6 +30,7 @@ public:
     bool get_hidden() const { return hidden; }
     virtual bool get_has_moved() const { return false; }
     std::vector<Square> get_cov_sqrs() const { return cov_sqrs; }
+    virtual std::vector<Square> get_atck_sqrs() const { return cov_sqrs; }
 protected:
     char code;
     char file;
@@ -97,6 +98,7 @@ public:
     void updt_position(char SAN_file, int SAN_rank, bool silent=false) override;
     void clear_en_passant() override;
     bool get_has_en_psst() const override { return has_en_passant; }
+    std::vector<Square> get_atck_sqrs() const override;
 private:
     bool has_moved, has_en_passant;
     Square en_passant_sqr;

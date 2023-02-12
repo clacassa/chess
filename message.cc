@@ -12,9 +12,9 @@ void message::open_log_win() {
         system("start pwsh -nop -nol -c \"[console]::windowwidth=20; "
                "[console]::windowheight=10; "
                "[console]::bufferwidth=[console]::windowwidth; " 
-               "[console]::title='Moves History'; "
+               "[console]::title='Move History'; "
                "gc log.txt -Wait\"");
-        HWND handle = FindWindow(NULL, "History if moves");
+        HWND handle = FindWindow(NULL, "Move History");
         SetWindowPos(handle, NULL, 40, 50, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
     #elif __linux__
         system("chmod u+x mv_hist && "
@@ -22,12 +22,12 @@ void message::open_log_win() {
     #endif
 }
 
-void message::write_to_log(Move move, bool w_ply, bool cap, bool chk, bool chkmt, 
-                                                                      char prom_pc) {
+void message::write_to_log(Move move, bool w_ply, int num, bool cap, bool chk,
+                                                           bool chkmt) {
     std::ofstream log;
     log.open(log_file, std::ios_base::app);
     if (w_ply)
-        log << move.num << ". ";
+        log << num << ". ";
     if (move.piece != 'P' && move.piece != 'p')
         log << move.piece;
     else if (cap)
@@ -35,14 +35,14 @@ void message::write_to_log(Move move, bool w_ply, bool cap, bool chk, bool chkmt
     if (cap)
         log << 'x';
     log << move.target.file << move.target.rank;
-    if (prom_pc != blank)
-        log << '=' << prom_pc;
+    if (move.prom != blank)
+        log << '=' << move.prom;
     if (chkmt)
         log << '#';
     else if (chk)
         log << '+';
     log << " ";
-    if (move.num % 4 == 0 && !w_ply)
+    if (num % 4 == 0 && !w_ply)
         log << "\n";
 }
 
