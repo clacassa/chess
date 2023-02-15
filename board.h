@@ -19,6 +19,9 @@ void clear_en_passant_sqr();
 
 bool is_en_passant_sqr(char file, int rank);
 bool is_any_en_psst_sqr();
+Square get_en_passant_sqr();
+
+int piece_occurences(char code);
 
 /**
  * @param code The code of the friendly side piece.

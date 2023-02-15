@@ -91,6 +91,27 @@ bool is_any_en_psst_sqr() {
     return false;
 }
 
+Square get_en_passant_sqr() {
+    for (size_t i(0); i < board.size(); ++i) {
+        for (size_t j(0); j < board[i].size(); ++j) {
+            if (board[i][j] == en_passant_sqr)
+                return {char('h'-j), int(i+1)};
+        }
+    }
+    return {blank, 9};
+}
+
+int piece_occurences(char code) {
+    int ocurences(0);
+    for (auto rank : board) {
+        for (auto sq : rank) {
+            if (sq == code)
+                ++ocurences;
+        }
+    }
+    return ocurences;
+}
+
 bool is_friendly(char code, char file, int rank) {
     char p(board[rank-1][int('h')-int(file)]);
     if (code >= 'A' && code <= 'R' && p >= 'A' && p <= 'R') {

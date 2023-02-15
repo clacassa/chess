@@ -23,6 +23,7 @@ public:
 
     void hide() { hidden = true; }
     void reveal() { hidden = false; }
+    virtual void set_has_moved(bool _has_moved) {}
 
     char get_code() const { return code; }
     char get_file() const { return file; }
@@ -48,6 +49,7 @@ public:
     void updt_cov_sqrs() override;
     void updt_position(char SAN_file, char SAN_rank, bool silent=false) override;
     void updt_position(char SAN_file, int SAN_rank, bool silent=false) override;
+    void set_has_moved(bool _has_moved) override { has_moved = _has_moved; }
     bool get_has_moved() const override { return has_moved; }
 private:
     bool has_moved;    
@@ -68,6 +70,7 @@ public:
     void updt_cov_sqrs() override;
     void updt_position(char SAN_file, char SAN_rank, bool silent=false) override;
     void updt_position(char SAN_file, int SAN_rank, bool silent=false) override;
+    void set_has_moved(bool _has_moved) override { has_moved = _has_moved; }
     bool get_has_moved() const override { return has_moved; }
 private:
     bool has_moved;

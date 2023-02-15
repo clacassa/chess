@@ -36,8 +36,8 @@ public:
     virtual void uprise_last_cap() = 0;
     virtual bool king_is_last() = 0;
 
-    virtual bool can_k_castle(bool chk_empty_sqrs=true) = 0;
-    virtual bool can_q_castle(bool chk_empty_sqrs=true) = 0;
+    virtual bool can_k_castle() = 0;
+    virtual bool can_q_castle() = 0;
     virtual void castle_king_side(bool silent=false) = 0;
     virtual void castle_queen_side(bool silent=false) = 0;
     virtual void undo_k_castle(bool silent=false) = 0;
@@ -70,8 +70,8 @@ public:
     void new_piece(char code, char file, int rank) override;
     void uprise_last_cap() override;
     bool king_is_last() override;
-    bool can_k_castle(bool chk_empty_sqrs=true) override;
-    bool can_q_castle(bool chk_empty_sqrs=true) override;
+    bool can_k_castle() override;
+    bool can_q_castle() override;
     void castle_king_side(bool silent=false) override;
     void castle_queen_side(bool silent=false) override;
     void undo_k_castle(bool silent=false) override;
@@ -86,8 +86,8 @@ public:
     void new_piece(char code, char file, int rank) override;
     void uprise_last_cap() override;
     bool king_is_last() override;
-    bool can_k_castle(bool chk_empty_sqrs=true) override;
-    bool can_q_castle(bool chk_empty_sqrs=true) override;
+    bool can_k_castle() override;
+    bool can_q_castle() override;
     void castle_king_side(bool silent=false) override;
     void castle_queen_side(bool silent=false) override;
     void undo_k_castle(bool silent=false) override;

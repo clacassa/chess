@@ -20,6 +20,7 @@
 #include <string>
 #include <array>
 #include <cstdlib>
+// #include <algorithm>
 #include "player.h"
 #include "piece.h"
 #include "board.h"
@@ -32,7 +33,7 @@ Game::Game()
 :   current_move('.', {blank, 0}, {blank, 0}, blank), last_move(current_move),
     SAN_piece(blank), SAN_file(blank), SAN_rank(blank), SAN_spec_file(blank),   
     SAN_spec_rank(blank), SAN_prom_pc(blank), SAN_cap(false), SAN_chk(false),
-    SAN_promote(false), w_turn(true), capture(false), q_castle(false), k_castle(false), check(false), checkmate(false), w_en_psst(false), b_en_psst(false), nb_move(1)
+    SAN_promote(false), w_turn(true), capture(false), q_castle(false), k_castle(false), check(false), checkmate(false), nb_move(1)
 {
     message::erase_log_data();
 }
@@ -226,12 +227,16 @@ bool Game::parse_fen(std::string fen) {
     w_turn = (fen[c] == 'w');
     c += 2;
     for (i = 0; i < 4; ++i) {
-        if (fen[c] == '-') 
+        if (fen[c] == '-') {
+            ++c; 
+            break;
+        }
+        if (fen[c] == ' ')
             break;
         ++c;
     }
-    ++c;
 
+    ++c;
     char ep_file(blank);
     int ep_rank(9);
     for (i = 0; i < 2; ++i) {
@@ -316,10 +321,12 @@ bool Game::parse_cmd(std::wstring cmd) {
         return true;
     }
     if (cmd == L"gen") {
-        for (auto& move : generate_moves(w_turn)) {
-            std::wcout << move.piece;
+        for (auto& move : generate_legal_moves(w_turn)) {
             std::wcout << move.start.file << move.start.rank
-                       << move.target.file << move.target.rank << "\n";
+                       << move.target.file << move.target.rank;
+            if (move.prom != blank)
+                std::wcout << move.prom;
+            std::wcout << "\n";
         }
         return true;
     }
@@ -488,20 +495,16 @@ void Game::reset_san_variables() {
 }
 
 void Game::make_move(Piece* p, Move move, bool w_ply, bool& k_cstl, bool& q_cstl) {
-    k_castle = false;
-    q_castle = false;
 
     if ((w_ply && p->get_code() == 'K') || (!w_ply && p->get_code() == 'k')) {
         if (move.target.file == p->get_file() + 2)
-            k_castle = true;
+            k_cstl = true;
         else if (move.target.file == p->get_file() - 2)
-            q_castle = true;
+            q_cstl = true;
     }
 
-    if (k_castle)
-        k_cstl = true;
-    else if (q_castle)
-        q_cstl = true;
+    k_castle = k_cstl;
+    q_castle = q_cstl;
 
     if (k_cstl || q_cstl)
         ++t_result.n_cstls;
@@ -516,18 +519,25 @@ void Game::unmake_move(Piece* p, Move move, bool w_ply, bool k_cstl, bool q_cstl
         (w_ply ? white.undo_q_castle(true) : black.undo_q_castle(true));
 
     if (w_ply && is_en_passant_sqr(move.start.file, move.start.rank + 1)) {
-        white.reset_en_passant_sqr();
-        w_en_psst = false;
+        // white.reset_en_passant_sqr();
+        // w_en_psst = false;
         clear_en_passant_sqr(move.start.file, move.start.rank + 1);
     }
-    else if (!w_ply && is_en_passant_sqr(move.start.file, move.start.rank - 1)){
-        black.reset_en_passant_sqr();
-        b_en_psst = false;
+    else if (!w_ply && is_en_passant_sqr(move.start.file, move.start.rank - 1)) {
+        // black.reset_en_passant_sqr();
+        // b_en_psst = false;
         clear_en_passant_sqr(move.start.file, move.start.rank - 1);
     }
 
     p->updt_position(move.start.file, move.start.rank, true);
     p->reveal();
+
+    if (move.prom != blank) {
+        if (w_ply)
+            white.piece_captured(move.target.file, move.target.rank);
+        else
+            black.piece_captured(move.target.file, move.target.rank);
+    }
     
     // if (w_ply)
     //     for (size_t i(0); i < black.get_nb_pieces(); ++i) {
@@ -542,7 +552,6 @@ void Game::unmake_move(Piece* p, Move move, bool w_ply, bool k_cstl, bool q_cstl
 }
 
 bool Game::is_move_legal(Piece* p, char trgt_file, int trgt_rank, bool w_ply) {
-    
     if (w_ply) {
         if ((k_castle && !white.can_k_castle()) || (q_castle && !white.can_q_castle()))
             return false;
@@ -559,7 +568,8 @@ bool Game::is_move_legal(Piece* p, char trgt_file, int trgt_rank, bool w_ply) {
     }
     
     bool cap(is_enemy(p->get_code(), trgt_file, trgt_rank)
-             || is_en_passant_sqr(trgt_file, trgt_rank));
+             || (is_en_passant_sqr(trgt_file, trgt_rank)
+             && (p->get_code() == 'P' || p->get_code() == 'p')));
 
     if (handle_check(p, trgt_file, trgt_rank, cap, w_ply))
         return true;
@@ -576,33 +586,42 @@ bool Game::handle_check(Piece* piece, char trgt_file, int trgt_rank, bool capt,b
         for (char f(piece->get_file()); f < 'h'; ++f) {
             piece->updt_position(f, trgt_rank, true);
             updt_board();
-            if (black.attacker())
+            if (black.attacker()) {
                 castling_cross_chk = true;
+                break;
+            }
         }
     }else if (w_p && q_castle) {
         for (char f(piece->get_file()); f > 'b'; --f) {
             piece->updt_position(f, trgt_rank, true);
             updt_board();
-            if (black.attacker())
+            if (black.attacker()) {
                 castling_cross_chk = true;
+                break;
+            }
         }
     }else if (!w_p && k_castle) {
         for (char f(piece->get_file()); f < 'h'; ++f) {
             piece->updt_position(f, trgt_rank, true);
             updt_board();
-            if (white.attacker())
+            if (white.attacker()) {
                 castling_cross_chk = true;
+                break;
+            }
         }
     }else if (!w_p && q_castle) {
         for (char f(piece->get_file()); f > 'b'; --f) {
             piece->updt_position(f, trgt_rank, true);
             updt_board();
-            if (white.attacker())
+            if (white.attacker()) {
                 castling_cross_chk = true;
+                break;
+            }
         }
     }
     if (castling_cross_chk) {
         piece->updt_position(start_sqr.file, start_sqr.rank, true);
+        updt_board();
         return false;
     }
 
@@ -662,14 +681,16 @@ bool Game::handle_check(Piece* piece, char trgt_file, int trgt_rank, bool capt,b
     if (trgt_is_ep_sqr)
         write_en_passant_sqr(trgt_file, trgt_rank);
     updt_board();
+
     return !illegal;
 }
 
 bool Game::process_move(Piece* p, char trgt_file, int trgt_rank, bool w_ply, 
                                                 char prom_piece, bool test) {
 
-    bool e_p(is_en_passant_sqr(trgt_file, trgt_rank));
-    bool cap(is_enemy(w_ply, trgt_file, trgt_rank) || e_p);
+    bool ep_cap(is_en_passant_sqr(trgt_file, trgt_rank)
+                && (p->get_code() == 'P' || p->get_code() == 'p'));
+    bool cap(is_enemy(w_ply, trgt_file, trgt_rank) || ep_cap);
     capture = cap;
 
     last_move = current_move;
@@ -680,6 +701,15 @@ bool Game::process_move(Piece* p, char trgt_file, int trgt_rank, bool w_ply,
     if (!w_ply)
         current_move.piece += upcase_shift;
 
+    
+
+    if (is_any_en_psst_sqr()) {
+        Square ep_sqr(get_en_passant_sqr());
+        if (!w_ply && ep_sqr.rank == 3)
+            clear_en_passant_sqr(ep_sqr.file, ep_sqr.rank);
+        else if (w_ply && ep_sqr.rank == 6)
+            clear_en_passant_sqr(ep_sqr.file, ep_sqr.rank);
+    }
     // Update position and in-range squares of the active piece
     p->updt_position(trgt_file, trgt_rank, test);
     updt_board();
@@ -699,18 +729,19 @@ bool Game::process_move(Piece* p, char trgt_file, int trgt_rank, bool w_ply,
     }
 
     // Detect any en-passant square
-    if (white.has_en_passant_sqr())
-        w_en_psst = true;
-    else if (black.has_en_passant_sqr())
-        b_en_psst = true;
+    // if (white.has_en_passant_sqr())
+    //     w_en_psst = true;
+    // else if (black.has_en_passant_sqr())
+    //     b_en_psst = true;
 
     // Delete the captured piece if there is any.
     // Hide it, i.e. make it inactive and unseeable while keeping it in memory
     // when this function is called by 'compute_moves'
     if (cap) {
         if (w_ply) {
-            if (e_p) {
+            if (ep_cap) {
                 ++t_result.n_ep;
+                // std::wcout << "epcap\n";
                 if (test)
                     black.hide_piece(trgt_file, trgt_rank-1);
                 else
@@ -723,7 +754,7 @@ bool Game::process_move(Piece* p, char trgt_file, int trgt_rank, bool w_ply,
                     black.piece_captured(trgt_file, trgt_rank);
             }
         }else {
-            if (e_p) {
+            if (ep_cap) {
                 ++t_result.n_ep;
                 if (test)
                     white.hide_piece(trgt_file, trgt_rank+1);
@@ -782,16 +813,16 @@ bool Game::process_move(Piece* p, char trgt_file, int trgt_rank, bool w_ply,
                 std::wcout << msg_color << "This is not a check\n" << reset_sgr;
         }
     }
-    
-    if (w_en_psst && !w_ply) {
-        clear_en_passant_sqr();
-        white.reset_en_passant_sqr();
-        w_en_psst = false;
-    }else if (b_en_psst && w_ply) {
-        clear_en_passant_sqr();
-        black.reset_en_passant_sqr();
-        b_en_psst = false;
-    }
+
+    // if (w_en_psst && !w_ply) {
+    //     clear_en_passant_sqr();
+    //     white.reset_en_passant_sqr();
+    //     w_en_psst = false;
+    // }else if (b_en_psst && w_ply) {
+    //     clear_en_passant_sqr();
+    //     black.reset_en_passant_sqr();
+    //     b_en_psst = false;
+    // }
     
     if (!test) {
         if (check) {
@@ -895,7 +926,7 @@ bool Game::computer_play() {
     reset_san_variables();
     Piece* p(nullptr);
 
-    std::vector<Move> moves(generate_moves(w_turn));
+    std::vector<Move> moves(generate_legal_moves(w_turn));
 
     size_t i(rand() % moves.size());
     Move move(moves[i]);
@@ -908,70 +939,6 @@ bool Game::computer_play() {
     
     w_turn = !w_turn;
     return false;
-        
-    //     size_t n(white.get_nb_pieces());
-    //     while (true) {
-    //         do {
-    //             size_t i(rand() % n);
-    //             p = white.get_piece(i);
-    //             p->updt_cov_sqrs();
-    //         } while (p->get_hidden() || p->get_cov_sqrs().size() == 0);
-            
-    //         size_t nsq(p->get_cov_sqrs().size());
-    //         size_t i(rand() % nsq);
-    //         char tf(p->get_cov_sqrs()[i].file);
-    //         int tr(p->get_cov_sqrs()[i].rank);
-
-    //         if (is_move_legal(p, tf, tr, w_turn)) {
-    //             if (process_move(p, tf, tr, w_turn, 'q'))
-    //                 return true;
-    //             break;
-    //         }
-    //     }
-    // }else {
-    //     size_t n(black.get_nb_pieces());
-    //     while (true) {
-
-    //         char tf;
-    //         int tr;
-    //         if (black.can_k_castle() || black.can_q_castle()) {
-    //             size_t i(0);
-    //             do {
-    //                 p = black.get_piece(i);
-    //                 p->updt_cov_sqrs();
-    //                 ++i;
-    //             } while (p->get_code() != 'k');
-    //             if (black.can_k_castle()) {
-    //                 tf = p->get_file() + 2;
-    //                 tr = p->get_rank();
-    //                 k_castle = true;
-    //             }else {
-    //                 tf = p->get_file() - 2;
-    //                 tr = p->get_rank();
-    //                 q_castle = true;
-    //             }                
-    //         }else {
-    //             do {
-    //                 size_t i(rand() % n);
-    //                 p = black.get_piece(i);
-    //                 p->updt_cov_sqrs();
-    //             } while (p->get_hidden() || p->get_cov_sqrs().size() == 0);
-
-    //             size_t nsq(p->get_cov_sqrs().size());
-    //             size_t i(rand() % nsq);
-    //             tf = p->get_cov_sqrs()[i].file;
-    //             tr = p->get_cov_sqrs()[i].rank;
-    //         }
-
-    //         if (is_move_legal(p, tf, tr, w_turn)) {
-    //             if (process_move(p, tf, tr, w_turn, 'q'))
-    //                 return true;
-    //             break;
-    //         }
-    //     }
-    // }
-    // w_turn = !w_turn;
-    // return false;
 }
 
 void Game::test_gen_moves(int max_depth) {
@@ -996,7 +963,7 @@ void Game::test_gen_moves(int max_depth) {
     }
 #else
     perft_depth = max_depth;
-    std::wcout << divide(max_depth, w_turn) << "\n";
+    std::wcout << divide(max_depth, w_turn) << "\n\n";
 #endif // DIVIDE
 }
 
@@ -1008,8 +975,10 @@ int Game::divide(int depth, bool w_ply) {
     for (auto move : moves) {
 
         std::wcout << move.start.file << move.start.rank
-                   << move.target.file << move.target.rank
-                   << (move.prom != blank ? move.prom + ": " : ": ");
+                   << move.target.file << move.target.rank;
+        if (move.prom != blank)
+            std::wcout << move.prom;
+        std::wcout << ": ";
         if (depth == 1) {
             std::wcout << "1\n";
             continue;
@@ -1021,14 +990,27 @@ int Game::divide(int depth, bool w_ply) {
         else
             p = black.find_piece(move.piece, move.start.file, move.start.rank);
 
+        Square enemy_ep_sqr;
+        bool is_enemy_ep_sqr(false);
+        if (is_any_en_psst_sqr()) {
+            enemy_ep_sqr = {get_en_passant_sqr().file, get_en_passant_sqr().rank};
+            is_enemy_ep_sqr = true;
+        }
+
         bool cap(is_enemy(w_ply, move.target.file, move.target.rank));
-        bool ep_cap(is_en_passant_sqr(move.target.file, move.target.rank));
+        bool ep_cap(is_en_passant_sqr(move.target.file, move.target.rank)
+                    && (p->get_code() == 'P' || p->get_code() == 'p'));
 
         make_move(p, move, w_ply, k_cstl, q_cstl);
-        int n_nodes(compute_moves(depth-1, !w_ply));
-        n_positions += n_nodes;
-        std::wcout << n_nodes << "\n";
+        if (is_move_legal(p, move.target.file, move.target.rank, w_ply)) {
+            int n_nodes(compute_moves(depth-1, !w_ply));
+            n_positions += n_nodes;
+            std::wcout << n_nodes << "\n";
+        }
         unmake_move(p, move, w_ply, k_cstl, q_cstl);
+
+        if (is_enemy_ep_sqr)
+            write_en_passant_sqr(enemy_ep_sqr.file, enemy_ep_sqr.rank);
 
         if (cap) {
             if (w_ply) {
@@ -1046,17 +1028,18 @@ int Game::divide(int depth, bool w_ply) {
         }
         updt_board();
     }
+    std::wcout << "\nNodes searched: ";
     if (depth == 1)
         return moves.size();
     return n_positions;
 }
 
-int Game::compute_moves(int depth, bool w_ply, Square ep_sqr) {
+int Game::compute_moves(int depth, bool w_ply) {
 
 #ifdef BULK_COUNTING
     // if (depth == 1)
     //     print_position(true);
-    std::vector<Move> moves(generate_moves(w_ply));
+    std::vector<Move> moves(generate_legal_moves(w_ply));
     if (depth == 1) {
         // std::wcout << restore_cursor_pos << clr_end_line;
         return moves.size();
@@ -1065,7 +1048,7 @@ int Game::compute_moves(int depth, bool w_ply, Square ep_sqr) {
     if (depth == 0) {
         return 1;
     }
-    std::vector<Move> moves(generate_moves(w_ply));
+    std::vector<Move> moves(generate_legal_moves(w_ply));
 #endif // BULK_COUNTING
 
     Piece* p(nullptr);
@@ -1084,47 +1067,31 @@ int Game::compute_moves(int depth, bool w_ply, Square ep_sqr) {
         //            << move.target.file << move.target.rank << "\n";
 
         bool k_cstl(false), q_cstl(false);
-        // k_castle = false;
-        // q_castle = false;
+
         if (w_ply)
             p = white.find_piece(move.piece, move.start.file, move.start.rank);
         else
             p = black.find_piece(move.piece, move.start.file, move.start.rank);
 
-        // if ((w_ply && p->get_code() == 'K') || (!w_ply && p->get_code() == 'k')) {
-        //     if (move.target.file == p->get_file() + 2)
-        //         k_castle = true;
-        //     else if (move.target.file == p->get_file() - 2)
-        //         q_castle = true;
-        // }
+        Square enemy_ep_sqr;
+        bool is_enemy_ep_sqr(false);
+        if (is_any_en_psst_sqr()) {
+            enemy_ep_sqr = {get_en_passant_sqr().file, get_en_passant_sqr().rank};
+            is_enemy_ep_sqr = true;
+        }
 
-        // if (k_castle)
-        //     k_cstl = true;
-        // else if (q_castle)
-        //     q_cstl = true;
-        // if (k_cstl || q_cstl)
-        //     ++t_result.n_cstls;
         bool cap(is_enemy(w_ply, move.target.file, move.target.rank));
-        bool ep_cap(is_en_passant_sqr(move.target.file, move.target.rank));
-        // process_move(p, move.target.file, move.target.rank, w_ply, move.prom, true);
+        bool ep_cap(is_en_passant_sqr(move.target.file, move.target.rank)
+                    && (p->get_code() == 'P' || p->get_code() == 'p'));
+
         make_move(p, move, w_ply, k_cstl, q_cstl);
-
-        // if (is_any_en_psst_sqr()) {
-        //     if (w_ply) {
-        //         Square m_ep_sqr({move.start.file, move.start.rank+1});
-        //         n_positions += compute_moves(depth-1, !w_ply, m_ep_sqr);
-        //     }else {
-        //         Square m_ep_sqr({move.start.file, move.start.rank-1});
-        //         n_positions += compute_moves(depth-1, !w_ply, m_ep_sqr);
-        //     }
-        // }else
-            n_positions += compute_moves(depth-1, !w_ply);
-
+        // if (is_move_legal(p, move.target.file, move.target.rank, w_ply))
+        n_positions += compute_moves(depth-1, !w_ply);
         unmake_move(p, move, w_ply, k_cstl, q_cstl);
-        // if (ep_sqr.file != blank) {
-        //     write_en_passant_sqr(ep_sqr.file, ep_sqr.rank);
-        //     w_ply ? b_en_psst = true : w_en_psst = true;
-        // }
+
+        if (is_enemy_ep_sqr)
+            write_en_passant_sqr(enemy_ep_sqr.file, enemy_ep_sqr.rank);
+
         if (cap) {
             if (w_ply) {
                 black.reveal_piece(move.target.file, move.target.rank);
@@ -1141,13 +1108,144 @@ int Game::compute_moves(int depth, bool w_ply, Square ep_sqr) {
         }
         updt_board();
     }
-
+ 
     return n_positions;
+}
+
+int Game::search(int depth, int alpha, int beta, bool w_ply) {
+    std::vector<Move> moves(generate_legal_moves(w_ply));
+    if (depth == 1) {
+        // std::wcout << restore_cursor_pos << clr_end_line;
+        return evaluate(w_ply);
+    }
+
+    if (moves.empty()) {
+        if (check)
+            return -1000;
+        return 0;
+    }
+
+    Piece* p(nullptr);
+    size_t i(0);
+
+    for (auto move : moves) {        
+        if (depth == perft_depth) {
+            std::wcout << restore_cursor_pos << clr_end_line << msg_color
+                       << ++i << "/" << moves.size() << "\n";
+            if (i == moves.size())
+                std::wcout << restore_cursor_pos << clr_end_line << msg_color;
+        }
+
+        if (w_ply)
+            p = white.find_piece(move.piece, move.start.file, move.start.rank);
+        else
+            p = black.find_piece(move.piece, move.start.file, move.start.rank);
+
+        Square enemy_ep_sqr;
+        bool is_enemy_ep_sqr(is_any_en_psst_sqr());
+        if (is_enemy_ep_sqr)
+            enemy_ep_sqr = {get_en_passant_sqr().file, get_en_passant_sqr().rank};
+
+        bool k_cstl(false), q_cstl(false);
+        bool cap(is_enemy(w_ply, move.target.file, move.target.rank));
+        bool ep_cap(is_en_passant_sqr(move.target.file, move.target.rank)
+                    && (p->get_code() == 'P' || p->get_code() == 'p'));
+
+        make_move(p, move, w_ply, k_cstl, q_cstl);
+        int evaluation(-search(depth-1, -beta, -alpha, !w_ply));
+        unmake_move(p, move, w_ply, k_cstl, q_cstl);
+        if (evaluation >= beta)
+            return beta;
+        alpha = std::max(alpha, evaluation);
+
+        if (is_enemy_ep_sqr)
+            write_en_passant_sqr(enemy_ep_sqr.file, enemy_ep_sqr.rank);
+
+        if (cap) {
+            if (w_ply) {
+                black.reveal_piece(move.target.file, move.target.rank);
+            }else {
+                white.reveal_piece(move.target.file, move.target.rank);
+            }
+        }else if (ep_cap) {
+            write_en_passant_sqr(move.target.file, move.target.rank);
+            if (w_ply) {
+                black.reveal_piece(move.target.file, move.target.rank-1);
+            }else {
+                white.reveal_piece(move.target.file, move.target.rank+1);
+            }
+        }
+        updt_board();
+    }
+    return alpha;
+}
+
+int Game::evaluate(bool w_ply) {
+    int w_material(count_material(true));
+    int b_material(count_material(false));
+
+    return (w_ply ? w_material - b_material : b_material - w_material);
+}
+
+int Game::count_material(bool w_ply) {
+    int material(0);
+    material += piece_occurences(w_ply ? 'P' : 'p');
+    material += piece_occurences(w_ply ? 'N' : 'n');
+    material += piece_occurences(w_ply ? 'B' : 'b');
+    material += piece_occurences(w_ply ? 'R' : 'r');
+    material += piece_occurences(w_ply ? 'Q' : 'q');
+    return material;
 }
 
 std::vector<Move> Game::generate_moves(bool w_ply) {
 
-    // print_position(w_ply);
+    size_t n;
+    Piece* p(nullptr);
+    std::vector<Move> pseudo_legal_moves;
+
+    if (w_ply)
+        n = white.get_nb_pieces();
+    else
+        n = black.get_nb_pieces();
+
+    for (size_t i(0); i < n; ++i) {
+        p = (w_ply ? white.get_piece(i) : black.get_piece(i));
+        if (p->get_hidden())
+            continue;
+        
+        for (auto& sq : p->get_cov_sqrs()) {
+            if ((w_ply && p->get_code() == 'P' && sq.rank == 8)
+                || (!w_ply && p->get_code() == 'p' && sq.rank == 1)) {
+
+                pseudo_legal_moves.push_back(Move(p->get_code(),
+                                            {p->get_file(), p->get_rank()},
+                                            {sq.file, sq.rank},
+                                            'q'));
+                pseudo_legal_moves.push_back(Move(p->get_code(),
+                                            {p->get_file(), p->get_rank()},
+                                            {sq.file, sq.rank},
+                                            'r'));
+                pseudo_legal_moves.push_back(Move(p->get_code(),
+                                            {p->get_file(), p->get_rank()},
+                                            {sq.file, sq.rank},
+                                            'b'));
+                pseudo_legal_moves.push_back(Move(p->get_code(),
+                                            {p->get_file(), p->get_rank()},
+                                            {sq.file, sq.rank},
+                                            'n'));
+            }else if (is_move_legal(p, sq.file, sq.rank, w_ply)) {
+                pseudo_legal_moves.push_back(Move(p->get_code(),
+                                           {p->get_file(), p->get_rank()},
+                                           {sq.file, sq.rank},
+                                           blank));
+            }
+        }
+    }
+    return pseudo_legal_moves;
+}
+
+std::vector<Move> Game::generate_legal_moves(bool w_ply) {
+
     size_t n;
     Piece* p(nullptr);
     std::vector<Move> legal_moves;
@@ -1168,6 +1266,9 @@ std::vector<Move> Game::generate_moves(bool w_ply) {
             continue;
         
         for (auto& sq : p->get_cov_sqrs()) {
+            k_castle = false;
+            q_castle = false;
+            // std::wcout << p->get_file() << p->get_rank() << sq.file << sq.rank << "\n";
             
             if ((w_ply && p->get_code() == 'K') || (!w_ply && p->get_code() == 'k')) {
                 if (sq.file == p->get_file() + 2)
@@ -1203,10 +1304,11 @@ std::vector<Move> Game::generate_moves(bool w_ply) {
                                            {sq.file, sq.rank},
                                            blank));
             }
-
-            k_castle = false;
-            q_castle = false;
         }
+    }
+    for (auto move : legal_moves) {
+        std::wcout << move.start.file << move.start.rank
+                   << move.target.file << move.target.rank << "\n";
     }
 
     return legal_moves;

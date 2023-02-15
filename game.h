@@ -51,7 +51,8 @@ private:
     char SAN_piece, SAN_file, SAN_rank, SAN_spec_file, SAN_spec_rank, SAN_prom_pc;
     bool SAN_cap, SAN_chk, SAN_promote;
 
-    bool w_turn, capture, q_castle, k_castle, check, checkmate, w_en_psst, b_en_psst;
+    bool w_turn, capture, q_castle, k_castle, check, checkmate;
+    // , w_en_psst, b_en_psst;
 
     int nb_move, perft_depth;
     
@@ -69,9 +70,14 @@ private:
     void reset_san_variables();
 
     int divide(int depth, bool w_ply);
-    int compute_moves(int depth=1, bool w_ply=true, Square ep_sqr={blank, 9});
+    int compute_moves(int depth=1, bool w_ply=true);
+
+    int search(int depth, int alpha, int beta, bool w_ply);
+    int evaluate(bool w_ply);
+    int count_material(bool w_ply);
 
     std::vector<Move> generate_moves(bool w_ply);
+    std::vector<Move> generate_legal_moves(bool w_ply);
 };
 
 #endif

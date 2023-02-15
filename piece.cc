@@ -66,8 +66,8 @@ bool Piece::attacking_enemy_king() const {
  *  KING  *
  **********/
 King::King(char code, char file, int rank)
-    : Piece(code, file, rank), has_moved(false) {
-    if (file != 'e')
+    : Piece(code, file, rank), has_moved(file != 'e') {
+    if ((code == 'K' && rank != 1) || (code == 'k' && rank != 8))
         has_moved = true;
 }
 
@@ -84,10 +84,30 @@ void King::updt_cov_sqrs() {
         }
     }
     if (!has_moved) {
-        if (is_empty(char(file-2), rank))
+        bool free_way(true);
+        for (char f(file-1); f >= char(file-3); --f) {
+            if (!is_empty(f, rank)) {
+                free_way = false;
+                break;
+            }
+        }
+        if (free_way)
             cov_sqrs.push_back({char(file-2), rank});
-        if (is_empty(char(file+2), rank))
+        
+        free_way = true;
+
+        for (char f(file+1); f <= char(file+2); ++f) {
+            if (!is_empty(f, rank)) {
+                free_way = false;
+                break;
+            }
+        }
+        if (free_way)
             cov_sqrs.push_back({char(file+2), rank});
+        // if (is_empty(char(file-2), rank))
+        //     cov_sqrs.push_back({char(file-2), rank});
+        // if (is_empty(char(file+2), rank))
+        //     cov_sqrs.push_back({char(file+2), rank});
     }
 }
 
@@ -214,7 +234,7 @@ void Pawn::updt_cov_sqrs() {
     if (char(file-1) >= 'a') {
         if (is_enemy(code, char(file-1), r))
             cov_sqrs.push_back({char(file-1), r});
-        if ((code == 'P' && r == 6) || (code == 'p' && r == 2)) {
+        if ((code == 'P' && r == 6) || (code == 'p' && r == 3)) {
             if (is_en_passant_sqr(char(file-1), r))
                 cov_sqrs.push_back({char(file-1), r});
         }
@@ -222,7 +242,7 @@ void Pawn::updt_cov_sqrs() {
     if (char(file+1) <= 'h') {
         if (is_enemy(code, char(file+1), r)) 
             cov_sqrs.push_back({char(file+1), r});
-        if ((code == 'P' && r == 6) || (code == 'p' && r == 2)) {
+        if ((code == 'P' && r == 6) || (code == 'p' && r == 3)) {
             if (is_en_passant_sqr(char(file+1), r))
                 cov_sqrs.push_back({char(file+1), r});
         }

@@ -191,7 +191,9 @@ bool load_FEN_file(Game& game, std::string FEN_filename) {
         std::ostringstream ss;
         ss << FEN_file.rdbuf();
         FEN_string = ss.str();
-        game.parse_fen(FEN_string);
+        
+        if (!game.parse_fen(FEN_string))
+            return false;
     }
     return true;
 }
