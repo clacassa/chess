@@ -29,7 +29,7 @@ namespace {
         :   light_sqr(lt), dark_sqr(dk) {}
     };
 
-    bool alt_piece_style(false);
+    bool alt_piece_style(false), pseudo_ascii(false), ascii(false);
 
     /* Special squares */
     const std::wstring empty_square(L"  ");
@@ -59,6 +59,36 @@ namespace {
     const std::wstring b_knight(L"\x1b[30m\u265E ");
     const std::wstring b_pawn(L"\x1b[30m\u265F ");
 
+    // pseudo_ascii style (uncolored)
+    const std::wstring pAscii_w_king(L"\u2654 ");
+    const std::wstring pAscii_w_queen(L"\u2655 ");
+    const std::wstring pAscii_w_rook(L"\u2656 ");
+    const std::wstring pAscii_w_bishop(L"\u2657 ");
+    const std::wstring pAscii_w_knight(L"\u2658 ");
+    const std::wstring pAscii_w_pawn(L"\u2659 ");
+
+    const std::wstring pAscii_b_king(L"\u265A ");
+    const std::wstring pAscii_b_queen(L"\u265B ");
+    const std::wstring pAscii_b_rook(L"\u265C ");
+    const std::wstring pAscii_b_bishop(L"\u265D ");
+    const std::wstring pAscii_b_knight(L"\u265E ");
+    const std::wstring pAscii_b_pawn(L"\u265F ");
+    
+    // ASCII style (alphabetic representation)
+    const std::wstring ascii_w_king(L"K ");
+    const std::wstring ascii_w_queen(L"Q ");
+    const std::wstring ascii_w_rook(L"R ");
+    const std::wstring ascii_w_bishop(L"B ");
+    const std::wstring ascii_w_knight(L"K ");
+    const std::wstring ascii_w_pawn(L"P ");
+
+    const std::wstring ascii_b_king(L"k ");
+    const std::wstring ascii_b_queen(L"q ");
+    const std::wstring ascii_b_rook(L"r ");
+    const std::wstring ascii_b_bishop(L"b ");
+    const std::wstring ascii_b_knight(L"k ");
+    const std::wstring ascii_b_pawn(L"p ");
+
     /* Colors */
     const std::wstring beige(L"\x1b[48;5;216m");
     const std::wstring brown(L"\x1b[48;5;95m");
@@ -85,6 +115,7 @@ namespace {
     std::wstring get_graphic_string(bool w_turn, char code, int col, int rank,
                                 Square start_sqr, Square target_sqr, bool check);
     void code_to_sgr(std::wstring& sgr_string, char code);
+
 }
 
 
@@ -173,11 +204,24 @@ namespace {
 
             std::wcout << "[" << i << "]\t" << sgr << (i == 0 ? "  (default)\n" : "\n");
         }
+        std::wstring pAscii_demo(L"##.." + pAscii_b_king + pAscii_w_king);
+        std::wstring ascii_demo(L". . " + ascii_b_king + ascii_w_king);
+        std::wcout << "[" << c_schemes.size() << "]\t" << pAscii_demo << "\n"
+                   << "[" << c_schemes.size() + 1 << "]\t" << ascii_demo << "\n";
     }
 
     void set_color_scheme(size_t id) {
-        if (id >= 0 && id < c_schemes.size())
-            scheme = c_schemes[id];
+        if (id < 0 || id >= c_schemes.size() + 2)
+            return;
+        if (id == c_schemes.size()) {
+            pseudo_ascii = true;
+            return;
+        }
+        if (id == c_schemes.size() + 1) {
+            ascii = true;
+            return;
+        }
+        scheme = c_schemes[id];
     }
 
     std::wstring get_graphic_string(bool w_turn, char code, int file, int rank,
@@ -186,11 +230,39 @@ namespace {
 
         // Chessboard alternating pattern.
         if (rank % 2) {
-            if (file % 2) sgr_square = scheme.light_sqr;
-            else sgr_square = scheme.dark_sqr;
+            if (file % 2) {
+                if (pseudo_ascii)
+                    sgr_square = L"..";
+                else if (ascii)
+                    sgr_square = L". ";
+                else
+                    sgr_square = scheme.light_sqr;
+            }
+            else {
+                if (pseudo_ascii)
+                    sgr_square = L"##";
+                else if (ascii)
+                    sgr_square = L". ";
+                else
+                    sgr_square = scheme.dark_sqr;
+            }
         }else {
-            if (file % 2) sgr_square = scheme.dark_sqr;
-            else sgr_square = scheme.light_sqr;
+            if (file % 2) {
+                if (pseudo_ascii)
+                    sgr_square = L"##";
+                else if (ascii)
+                    sgr_square = L". ";
+                else
+                    sgr_square = scheme.dark_sqr;
+            }
+            else {
+                if (pseudo_ascii)
+                    sgr_square = L"..";
+                else if (ascii)
+                    sgr_square = L".";
+                else
+                    sgr_square = scheme.light_sqr;
+            }
         }
 
         // Green background for the start and target squares.
@@ -238,43 +310,104 @@ namespace {
         switch (code) {
             case '.':
             // case '!':
-                sgr_string += empty_square;
+                if (!pseudo_ascii && !ascii)
+                    sgr_string += empty_square;
                 break;
             case 'K':
-                sgr_string += (alt_piece_style ? w_king_bis : w_king);
+                if (pseudo_ascii)
+                    sgr_string = pAscii_w_king;
+                else if (ascii)
+                    sgr_string = ascii_w_king;
+                else
+                    sgr_string += (alt_piece_style ? w_king_bis : w_king);
                 break;
             case 'Q':
-                sgr_string += (alt_piece_style ? w_queen_bis : w_queen);
+                if (pseudo_ascii)
+                    sgr_string = pAscii_w_queen;
+                else if (ascii)
+                    sgr_string = pAscii_w_queen;
+                else
+                    sgr_string += (alt_piece_style ? w_queen_bis : w_queen);
                 break;
             case 'R':
-                sgr_string += (alt_piece_style ? w_rook_bis : w_rook);
+                if (pseudo_ascii)
+                    sgr_string = pAscii_w_rook;
+                else if (ascii)
+                    sgr_string = ascii_w_rook;
+                else
+                    sgr_string += (alt_piece_style ? w_rook_bis : w_rook);
                 break;
             case 'B':
-                sgr_string += (alt_piece_style ? w_bishop_bis : w_bishop);
+                if (pseudo_ascii)
+                    sgr_string = pAscii_w_bishop;
+                else if (ascii)
+                    sgr_string = ascii_w_bishop;
+                else
+                    sgr_string += (alt_piece_style ? w_bishop_bis : w_bishop);
                 break;
             case 'N':
-                sgr_string += (alt_piece_style ? w_knight_bis : w_knight);
+                if (pseudo_ascii)
+                    sgr_string = pAscii_w_knight;
+                else if (ascii)
+                    sgr_string = ascii_w_knight;
+                else
+                    sgr_string += (alt_piece_style ? w_knight_bis : w_knight);
                 break;
             case 'P':
-                sgr_string += (alt_piece_style ? w_pawn_bis : w_pawn);
+                if (pseudo_ascii)
+                    sgr_string = pAscii_w_pawn;
+                else if (ascii)
+                    sgr_string = ascii_w_pawn;
+                else
+                    sgr_string += (alt_piece_style ? w_pawn_bis : w_pawn);
                 break;
             case 'k':
-                sgr_string += b_king;
+                if (pseudo_ascii)
+                    sgr_string = pAscii_b_king;
+                else if (ascii)
+                    sgr_string = ascii_b_king;
+                else
+                    sgr_string += b_king;
                 break;
             case 'q':
-                sgr_string += b_queen;
+                if (pseudo_ascii)
+                    sgr_string = pAscii_b_queen;
+                else if (ascii)
+                    sgr_string = ascii_b_queen;
+                else
+                    sgr_string += b_queen;
                 break;
             case 'r':
-                sgr_string += b_rook;
+                if (pseudo_ascii)
+                    sgr_string = pAscii_b_rook;
+                else if (ascii)
+                    sgr_string = ascii_b_rook;
+                else
+                    sgr_string += b_rook;
                 break;
             case 'b':
-                sgr_string += b_bishop;
+                if (pseudo_ascii)
+                    sgr_string = pAscii_b_bishop;
+                else if (ascii)
+                    sgr_string = ascii_b_bishop;
+                else
+                    sgr_string += b_bishop;
                 break;
             case 'n':
-                sgr_string += b_knight;
+                if (pseudo_ascii)
+                    sgr_string = pAscii_b_knight;
+                else if (ascii)
+                    sgr_string = ascii_b_knight;
+                else
+                    sgr_string += b_knight;
                 break;
             case 'p':
-                sgr_string += b_pawn;
+                if (pseudo_ascii)
+                    sgr_string = pAscii_b_pawn;
+                else if (ascii)
+                    sgr_string = ascii_b_pawn;
+                else
+                    sgr_string += b_pawn;
                 break;
             case '!':
                 sgr_string += magenta + L"b ";

@@ -1306,10 +1306,10 @@ std::vector<Move> Game::generate_legal_moves(bool w_ply) {
             }
         }
     }
-    for (auto move : legal_moves) {
-        std::wcout << move.start.file << move.start.rank
-                   << move.target.file << move.target.rank << "\n";
-    }
+    // for (auto move : legal_moves) {
+    //    std::wcout << move.start.file << move.start.rank
+    //               << move.target.file << move.target.rank << "\n";
+    // }
 
     return legal_moves;
 }

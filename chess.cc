@@ -30,9 +30,9 @@
 #include "view.h"
 #include "game.h"
 
-int parse_cli_args(int argc, char ** argv, Game& game, bool& black, bool& pvp, bool& cvc);
-void usage(char * prog_name);
-void version(char * prog_name);
+int parse_cli_args(int argc, char ** argv, std::wstring prog_name, Game& game, bool& black, bool& pvp, bool& cvc);
+void usage(std::wstring prog_name);
+void version(std::wstring prog_name);
 bool verify_FEN_file(std::string FEN_filename);
 bool load_FEN_file(Game& game, std::string FEN_filename);
 
@@ -47,11 +47,21 @@ int main(int argc, char ** argv) {
 
     srand((unsigned) time(0));
 
+    std::wstring prog_name;
+    size_t pos(0);
+    for (size_t i(0); i < sizeof(argv[0]); ++i) {
+        if (argv[0][i] == '/' || argv[0][i] == '\\')
+            pos = i;
+    }
+    for (size_t i(pos+1); i < sizeof(argv[0]); ++i) {
+        prog_name += argv[0][i];
+    }
+
     Game game;
     bool black(false), pvp(false), cvc(false);
     
     /* Parse CLI args */
-    int parse_result(parse_cli_args(argc, argv, game, black, pvp, cvc));
+    int parse_result(parse_cli_args(argc, argv, prog_name, game, black, pvp, cvc));
     if (parse_result == 1)
         return 1;
     else if (parse_result == 2)
@@ -62,10 +72,10 @@ int main(int argc, char ** argv) {
     return 0;
 }
 
-int parse_cli_args(int argc, char ** argv, Game& game, bool& black, bool& pvp,bool& cvc) {
+int parse_cli_args(int argc, char ** argv, std::wstring prog_name, Game& game, bool& black, bool& pvp,bool& cvc) {
     std::string FEN_filename;
     if (argc == 1) {
-        usage(argv[0]);
+        usage(prog_name);
         std::wcout << "\n";
     }
 
@@ -128,10 +138,10 @@ int parse_cli_args(int argc, char ** argv, Game& game, bool& black, bool& pvp,bo
                 game.parse_fen(ini_board);
             }
             else if (strcmp(argv[i], "--help") == 0) {
-                usage(argv[0]);
+                usage(prog_name);
                 return 2;
             }else if (strcmp(argv[i], "--version") == 0) {
-                version(argv[0]);
+                version(prog_name);
                 return 2;
             }else {
                 FEN_filename = argv[i];
@@ -144,22 +154,23 @@ int parse_cli_args(int argc, char ** argv, Game& game, bool& black, bool& pvp,bo
     return 0;
 }
 
-void usage(char * prog_name) {
+void usage(std::wstring prog_name) {
     std::wcout << "***CHESS in the terminal***\n"
-               << "usage: " << prog_name << " [options] [depth=5] [fen-file]\n"
-               << "options:\n"
-               << "  -t, --perft\t\tPerform a perft test up to depth plies from\n"
-                  "\t\t\t  the specified FEN, or from the default board if no file\n"
-                  "\t\t\t  is given, and then exit.\n"
+               << "usage : " << prog_name << " [options] [fen-file]\n"
+               << "options :\n"
                << "  -b, --black\t\tTo play as Black.\n"
                << "  --pvp\t\t\tTo play locally against a friend.\n"
                << "  -c, --computer-dual\tWitness the computer playing against himself.\n"
-               << "  --style\t\tTo select a color scheme for the chessboard.\n"
+               << "  -t, --perft [depth=5]\tPerform a performance test up to " << italic << "depth" << reset_sgr << " plies from\n"
+                  "\t\t\t  the specified FEN, or from the default board if no file\n"
+                  "\t\t\t  is given, and then exit.\n"
+               << "  --style\t\tTo select a color scheme for the chessboard.\n\n"
                << "  --help\t\tPrint this message and exit.\n"
                << "  --version\t\tPrint version information and exit.\n";
 }
 
-void version(char * prog_name) {
+
+void version(std::wstring prog_name) {
     std::wcout << msg_color << prog_name << " 0.1" << reset_sgr << "\n"
                << "Copyright (c) 2023 Cyprien Lacassagne\n"
                << "This is free software: you are free to change and redistribute it.\n"
