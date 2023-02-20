@@ -150,6 +150,8 @@ bool customize_style() {
     }
     if (select == 1)
         alt_piece_style = true;
+    else
+        alt_piece_style = false;
 
     return true;
 }
