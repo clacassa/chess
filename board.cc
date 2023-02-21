@@ -42,9 +42,9 @@ void print_ascii() {
     }
 }
 
-void board_print_board(bool white_pov, Square start_sqr, Square target_sqr,
-                       bool check) {
-    print_board(board, white_pov, start_sqr, target_sqr, check);
+void board_print_board(bool w_pov, Square start_sqr, Square target_sqr, bool check,
+                                                                        bool cvc) {
+    print_board(board, w_pov, start_sqr, target_sqr, check, cvc);
 }
 
 void write_piece(char code, char file, int rank) {

@@ -157,8 +157,8 @@ bool customize_style() {
 }
 
 void print_board(Board b, bool white_pov, Square start_sqr, Square target_sqr,
-                 bool check) {
-    if (white_pov) {
+                 bool check, bool cvc) {
+    if (white_pov || cvc) {
         for (int i(board_size-1); i >= 0; --i) {
             std::wcout << i + 1 << " ";
             for (int j(board_size-1); j >= 0; --j) {
@@ -327,7 +327,7 @@ namespace {
                 if (pseudo_ascii)
                     sgr_string = pAscii_w_queen;
                 else if (ascii)
-                    sgr_string = pAscii_w_queen;
+                    sgr_string = ascii_w_queen;
                 else
                     sgr_string += (alt_piece_style ? w_queen_bis : w_queen);
                 break;

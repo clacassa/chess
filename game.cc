@@ -20,7 +20,6 @@
 #include <string>
 #include <array>
 #include <cstdlib>
-// #include <algorithm>
 #include "player.h"
 #include "piece.h"
 #include "board.h"
@@ -44,7 +43,8 @@ void Game::game_flow(bool as_black, bool pvp, bool cvc) {
 
     updt_board();
     fen_verify_checks();
-    print_position(w_turn, cvc);
+    if (pvp || !as_black)
+        print_position(w_turn, cvc);
 
     std::wstring SAN;
     while (true) {
@@ -55,6 +55,8 @@ void Game::game_flow(bool as_black, bool pvp, bool cvc) {
                 break;
             updt_board();
             ++nb_move;
+            if (!cvc)
+                print_position(w_turn);
         }
 
         if (!cvc) {
@@ -155,7 +157,7 @@ void Game::print_position(bool w_ply, bool cvc) {
         std::wcout << "\n";
     }
 
-    board_print_board(w_ply, start, target, check);
+    board_print_board(w_ply, start, target, check, cvc);
     // print_ascii();
 }
 

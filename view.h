@@ -25,6 +25,7 @@ const std::wstring restore_cursor_pos(L"\x1b[u");
 
 /* Functions */
 bool customize_style();
-void print_board(Board, bool white_pov, Square start_sqr, Square target_sqr, bool check);
+void print_board(Board, bool w_pov, Square start_sqr, Square target_sqr, bool check,
+                                                                         bool cvc);
 
 #endif

@@ -8,8 +8,8 @@
 constexpr char en_passant_sqr('!');
 
 void print_ascii();
-void board_print_board(bool white_pov, Square start_sqr, Square target_sqr,
-                       bool check);
+void board_print_board(bool w_pov, Square start_sqr, Square target_sqr, bool check,
+                                                                        bool cvc);
 
 void write_piece(char code, char file, int rank);
 void empty_board();
