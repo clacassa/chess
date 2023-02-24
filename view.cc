@@ -33,6 +33,9 @@ namespace {
 
     /* Special squares */
     const std::wstring empty_square(L"  ");
+    const std::wstring pAscii_light_sqr(L". ");
+    const std::wstring pAscii_dark_sqr(L"# ");
+    const std::wstring ascii_square(L". ");
     const std::wstring light_target_sqr(L"\x1b[48;5;107m");
     const std::wstring dark_target_sqr(L"\x1b[48;5;101m");
     const std::wstring check_sqr(L"\x1b[48;5;168m");
@@ -79,14 +82,14 @@ namespace {
     const std::wstring ascii_w_queen(L"Q ");
     const std::wstring ascii_w_rook(L"R ");
     const std::wstring ascii_w_bishop(L"B ");
-    const std::wstring ascii_w_knight(L"K ");
+    const std::wstring ascii_w_knight(L"N ");
     const std::wstring ascii_w_pawn(L"P ");
 
     const std::wstring ascii_b_king(L"k ");
     const std::wstring ascii_b_queen(L"q ");
     const std::wstring ascii_b_rook(L"r ");
     const std::wstring ascii_b_bishop(L"b ");
-    const std::wstring ascii_b_knight(L"k ");
+    const std::wstring ascii_b_knight(L"n ");
     const std::wstring ascii_b_pawn(L"p ");
 
     /* Colors */
@@ -99,15 +102,16 @@ namespace {
     const std::wstring light_beige(L"\x1b[48;5;216m");
     const std::wstring grey(L"\x1b[48;5;248m");
     const std::wstring magenta(L"\x1b[48;5;5m");
+    const std::wstring green(L"\x1b[48;5;28m");
 
     /* Color schemes */
     const ColorScheme standard(beige, brown);
     const ColorScheme gnu_chess(light_grey, magenta);
-    const ColorScheme grey_blue(grey, navy);
+    const ColorScheme grey_green(grey, green);
     const ColorScheme deep_blue(skyblue, navy);
 
     ColorScheme scheme(beige, brown);
-    const std::vector<ColorScheme> c_schemes { standard, gnu_chess, grey_blue, 
+    const std::vector<ColorScheme> c_schemes { standard, gnu_chess, grey_green, 
                                                                     deep_blue };
 
     void color_scheme_menu();
@@ -129,6 +133,9 @@ bool customize_style() {
         return false;
     }
     set_color_scheme(select);
+
+    if (select >= c_schemes.size())
+        return true;
 
     std::wcout << "White pieces style options: \n[0]\t"
                << scheme.dark_sqr << w_king << scheme.light_sqr << w_queen
@@ -217,10 +224,12 @@ namespace {
             return;
         if (id == c_schemes.size()) {
             pseudo_ascii = true;
+            ascii = false;
             return;
         }
         if (id == c_schemes.size() + 1) {
             ascii = true;
+            pseudo_ascii = false;
             return;
         }
         scheme = c_schemes[id];
@@ -234,63 +243,57 @@ namespace {
         if (rank % 2) {
             if (file % 2) {
                 if (pseudo_ascii)
-                    sgr_square = L"..";
-                else if (ascii)
-                    sgr_square = L". ";
-                else
+                    sgr_square = pAscii_light_sqr;
+                else if (!ascii)
                     sgr_square = scheme.light_sqr;
             }
             else {
                 if (pseudo_ascii)
-                    sgr_square = L"##";
-                else if (ascii)
-                    sgr_square = L". ";
-                else
+                    sgr_square = pAscii_dark_sqr;
+                else if (!ascii)
                     sgr_square = scheme.dark_sqr;
             }
         }else {
             if (file % 2) {
                 if (pseudo_ascii)
-                    sgr_square = L"##";
-                else if (ascii)
-                    sgr_square = L". ";
-                else
+                    sgr_square = pAscii_dark_sqr;
+                else if (!ascii)
                     sgr_square = scheme.dark_sqr;
             }
             else {
                 if (pseudo_ascii)
-                    sgr_square = L"..";
-                else if (ascii)
-                    sgr_square = L".";
-                else
+                    sgr_square = pAscii_light_sqr;
+                else if (!ascii)
                     sgr_square = scheme.light_sqr;
             }
         }
 
         // Green background for the start and target squares.
-        char strt_file(start_sqr.file);
-        int strt_rank(start_sqr.rank);
-        if (strt_file != blank && strt_rank >= 1 && strt_rank <= board_size) {
-            if (rank == strt_rank-1 && file == int('h')-int(strt_file)) {
-                if (rank % 2) {
-                    if (file % 2) sgr_square = light_target_sqr;
-                    else sgr_square = dark_target_sqr;
-                }else {
-                    if (file % 2) sgr_square = dark_target_sqr;
-                    else sgr_square = light_target_sqr;
+        if (!pseudo_ascii && !ascii) {
+            char strt_file(start_sqr.file);
+            int strt_rank(start_sqr.rank);
+            if (strt_file != blank && strt_rank >= 1 && strt_rank <= board_size) {
+                if (rank == strt_rank-1 && file == int('h')-int(strt_file)) {
+                    if (rank % 2) {
+                        if (file % 2) sgr_square = light_target_sqr;
+                        else sgr_square = dark_target_sqr;
+                    }else {
+                        if (file % 2) sgr_square = dark_target_sqr;
+                        else sgr_square = light_target_sqr;
+                    }
                 }
             }
-        }
-        char trgt_file(target_sqr.file);
-        int trgt_rank(target_sqr.rank);
-        if (trgt_file != blank && trgt_rank >= 1 && trgt_rank <= board_size) {
-            if (rank == trgt_rank-1 && file == int('h')-int(trgt_file)) {
-                if (rank % 2) {
-                    if (file % 2) sgr_square = light_target_sqr;
-                    else sgr_square = dark_target_sqr;
-                }else {
-                    if (file % 2) sgr_square = dark_target_sqr;
-                    else sgr_square = light_target_sqr;
+            char trgt_file(target_sqr.file);
+            int trgt_rank(target_sqr.rank);
+            if (trgt_file != blank && trgt_rank >= 1 && trgt_rank <= board_size) {
+                if (rank == trgt_rank-1 && file == int('h')-int(trgt_file)) {
+                    if (rank % 2) {
+                        if (file % 2) sgr_square = light_target_sqr;
+                        else sgr_square = dark_target_sqr;
+                    }else {
+                        if (file % 2) sgr_square = dark_target_sqr;
+                        else sgr_square = light_target_sqr;
+                    }
                 }
             }
         }
@@ -314,6 +317,8 @@ namespace {
             // case '!':
                 if (!pseudo_ascii && !ascii)
                     sgr_string += empty_square;
+                if (!pseudo_ascii && ascii)
+                    sgr_string += ascii_square;
                 break;
             case 'K':
                 if (pseudo_ascii)
@@ -412,7 +417,7 @@ namespace {
                     sgr_string += b_pawn;
                 break;
             case '!':
-                sgr_string += magenta + L"b ";
+                sgr_string += magenta + L"b " + reset_sgr;
                 break;
             default:
                 sgr_string += L"\x1b[31m? ";

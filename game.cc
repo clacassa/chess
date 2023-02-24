@@ -308,6 +308,7 @@ bool Game::parse_cmd(std::wstring cmd) {
     }
     if (cmd == L"style") {
         customize_style();
+        print_position(w_turn);
         return true;
     }
     if (cmd == L"computer") {
