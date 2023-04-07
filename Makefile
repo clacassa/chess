@@ -8,7 +8,7 @@ all: $(OUT)
 	@rm -f *.o
 
 $(OUT): $(OFILES)
-	$(CXX) $(OFILES) -o $@
+	$(CXX) $(CXXFLAGS) $(OFILES) -o $@
 
 %.o: %.cc
 	$(CXX) $(CXXFLAGS) -c $< -o $@
