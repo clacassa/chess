@@ -33,7 +33,7 @@ void message::open_moves_win() {
                     "[console]::windowheight=10; "
                     "[console]::bufferwidth=[console]::windowwidth; " 
                     "[console]::title='Move History'; "
-                    "gc log.txt -Wait\"");
+                    "gc moves_history.txt -Wait\"");
         HWND handle = FindWindow(NULL, "Move History");
         SetWindowPos(handle, NULL, 40, 50, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
     #elif __linux__
