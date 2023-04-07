@@ -1,19 +1,20 @@
 /*
- *  board.cc -- chess -- Chess game in the terminal
- *  Copyright (C) 2023 Cyprien Lacassagne
+ * board.cc
+ * This file is part of chess, a console chess engine.
+ * Copyright (C) 2023 Cyprien Lacassagne
 
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
 
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
 
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 #include <iostream>
@@ -21,7 +22,7 @@
 #include "board.h"
 #include "view.h"
 
-static Board board = {
+static Chessboard chessboard = {
     'R', 'N', 'B', 'K', 'Q', 'B', 'N', 'R', // 1
     'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', // 2
     '.', '.', '.', '.', '.', '.', '.', '.', // 3
@@ -34,7 +35,7 @@ static Board board = {
 };
 
 void print_ascii() {
-    for (auto rank : board) {
+    for (auto rank : chessboard) {
         for (auto sq : rank) {
             std::wcout << sq;
         }
@@ -42,17 +43,12 @@ void print_ascii() {
     }
 }
 
-void board_print_board(bool w_pov, Square start_sqr, Square target_sqr, bool check,
-                                                                        bool cvc) {
-    print_board(board, w_pov, start_sqr, target_sqr, check, cvc);
-}
-
 void write_piece(char code, char file, int rank) {
-    board[rank-1][int('h')-int(file)] = code;
+    chessboard[rank-1][int('h')-int(file)] = code;
 }
 
 void empty_board() {
-    for (auto& rank : board) {
+    for (auto& rank : chessboard) {
         for (auto& sq : rank) {
             if (sq != en_passant_sqr)
                 sq = '.';
@@ -61,15 +57,15 @@ void empty_board() {
 }
 
 void write_en_passant_sqr(char file, int rank) {
-    board[rank-1][int('h')-int(file)] = en_passant_sqr;
+    chessboard[rank-1][int('h')-int(file)] = en_passant_sqr;
 }
 
 void clear_en_passant_sqr(char file, int rank) {
-    board[rank-1][int('h')-int(file)] = '.';
+    chessboard[rank-1][int('h')-int(file)] = '.';
 }
 
 void clear_en_passant_sqr() {
-    for (auto& rank : board) {
+    for (auto& rank : chessboard) {
         for (auto& sq : rank) {
             if (sq == en_passant_sqr)
                 sq = '.';
@@ -78,11 +74,11 @@ void clear_en_passant_sqr() {
 }
 
 bool is_en_passant_sqr(char file, int rank) {
-    return (board[rank-1][int('h')-int(file)] == en_passant_sqr);
+    return (chessboard[rank-1][int('h')-int(file)] == en_passant_sqr);
 }
 
 bool is_any_en_psst_sqr() {
-    for (auto rank : board) {
+    for (auto rank : chessboard) {
         for (auto sq : rank) {
             if (sq == en_passant_sqr)
                 return true;
@@ -92,9 +88,9 @@ bool is_any_en_psst_sqr() {
 }
 
 Square get_en_passant_sqr() {
-    for (size_t i(0); i < board.size(); ++i) {
-        for (size_t j(0); j < board[i].size(); ++j) {
-            if (board[i][j] == en_passant_sqr)
+    for (size_t i(0); i < chessboard.size(); ++i) {
+        for (size_t j(0); j < chessboard[i].size(); ++j) {
+            if (chessboard[i][j] == en_passant_sqr)
                 return {char('h'-j), int(i+1)};
         }
     }
@@ -102,18 +98,18 @@ Square get_en_passant_sqr() {
 }
 
 int piece_occurences(char code) {
-    int ocurences(0);
-    for (auto rank : board) {
+    int occurences(0);
+    for (auto rank : chessboard) {
         for (auto sq : rank) {
             if (sq == code)
-                ++ocurences;
+                ++occurences;
         }
     }
-    return ocurences;
+    return occurences;
 }
 
 bool is_friendly(char code, char file, int rank) {
-    char p(board[rank-1][int('h')-int(file)]);
+    char p(chessboard[rank-1][int('h')-int(file)]);
     if (code >= 'A' && code <= 'R' && p >= 'A' && p <= 'R') {
         return true;
     }
@@ -124,7 +120,7 @@ bool is_friendly(char code, char file, int rank) {
 }
 
 bool is_enemy(char code, char file, int rank) {
-    char p(board[rank-1][int('h')-int(file)]);
+    char p(chessboard[rank-1][int('h')-int(file)]);
     if (code >= 'A' && code <= 'R' && p >= 'a' && p <= 'r') {
         return true;
     }
@@ -135,7 +131,7 @@ bool is_enemy(char code, char file, int rank) {
 }
 
 bool is_enemy(bool w_to_play, char file, int rank) {
-    char p(board[rank-1][int('h')-int(file)]);
+    char p(chessboard[rank-1][int('h')-int(file)]);
     if (w_to_play && (p >= 'b' && p <= 'r'))
         return true;
     if (!w_to_play && (p >= 'B' && p <= 'R'))
@@ -144,35 +140,20 @@ bool is_enemy(bool w_to_play, char file, int rank) {
 }
 
 bool is_empty(char file, int rank) {
-    char c(board[rank-1][int('h')-int(file)]);
+    char c(chessboard[rank-1][int('h')-int(file)]);
     return (c == '.' || c == en_passant_sqr);
 }
 
 bool is_enemy_king(char code, char file, int rank) {
-    char p(board[rank-1][int('h')-int(file)]);
+    char p(chessboard[rank-1][int('h')-int(file)]);
     return (code >= 'A' && code <= 'R' ? p == 'k' : p == 'K');
 }
 
-// std::vector<Square> get_friendly_sqrs(char code, char file, int rank) {
-//     std::vector<Square> friends;
-//     if (code >= 'A' && code <= 'R') {
-//         for (int i(0); i < board_size; ++i) {
-//             for (int j(0); j < board_size; ++j) {
-//                 if (board[i][j] >= 'A' && board[i][j] <= 'R' 
-//                     && (i != rank - 1 || j != int('h')-int(file))) {
-//                     friends.push_back({char(int('h')-j), i+1});
-//                 }
-//             }
-//         }
-//     }else {
-//         for (int i(0); i < board_size; ++i) {
-//             for (int j(0); j < board_size; ++j) {
-//                 if (board[i][j] >= 'a' && board[i][j] <= 'r'
-//                     && (i != rank-1 || j != int('h')-int(file))) {
-//                     friends.push_back({char(int('h')-j), i+1});
-//                 }
-//             }
-//         }
-//     }
-//     return friends;
-// }
+void board::print_board(bool w_pov, Square start_sqr, Square target_sqr, bool check,
+                                                                        bool cvc) {
+    view::print_board(chessboard, w_pov, start_sqr, target_sqr, check, cvc);
+}
+
+void board::print_board(bool w_pov) {
+    view::print_board(chessboard, w_pov);
+}

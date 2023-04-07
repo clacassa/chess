@@ -8,7 +8,7 @@
 // #define DIVIDE
 
 constexpr int board_size(8);
-typedef std::array<std::array<char, board_size>, board_size> Board;
+typedef std::array<std::array<char, board_size>, board_size> Chessboard;
 
 struct Square {
     char file;

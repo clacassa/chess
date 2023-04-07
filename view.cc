@@ -1,19 +1,20 @@
 /*
- *  view.cc -- chess -- Chess game in the terminal
- *  Copyright (C) 2023 Cyprien Lacassagne
+ * view.cc
+ * This file is part of chess, a console chess engine
+ * Copyright (C) 2023 Cyprien Lacassagne
 
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
 
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
 
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 #include <iostream>
@@ -21,16 +22,6 @@
 #include "view.h"
 
 namespace {
-
-    struct ColorScheme {
-        std::wstring light_sqr;
-        std::wstring dark_sqr;
-        ColorScheme(std::wstring lt, std::wstring dk)
-        :   light_sqr(lt), dark_sqr(dk) {}
-    };
-
-    bool alt_piece_style(false), pseudo_ascii(false), ascii(false);
-
     /* Special squares */
     const std::wstring empty_square(L"  ");
     const std::wstring pAscii_light_sqr(L". ");
@@ -104,28 +95,44 @@ namespace {
     const std::wstring magenta(L"\x1b[48;5;5m");
     const std::wstring green(L"\x1b[48;5;28m");
 
+    struct ColorScheme {
+        std::wstring light_sqr;
+        std::wstring dark_sqr;
+        ColorScheme(std::wstring lt, std::wstring dk)
+        :   light_sqr(lt), dark_sqr(dk) {}
+    };
+
     /* Color schemes */
     const ColorScheme standard(beige, brown);
     const ColorScheme gnu_chess(light_grey, magenta);
     const ColorScheme grey_green(grey, green);
     const ColorScheme deep_blue(skyblue, navy);
 
-    ColorScheme scheme(beige, brown);
-    const std::vector<ColorScheme> c_schemes { standard, gnu_chess, grey_green, 
-                                                                    deep_blue };
+    const std::vector<ColorScheme> c_schemes {
+        standard,
+        gnu_chess,
+        grey_green, 
+        deep_blue
+    };
 
     void color_scheme_menu();
     void set_color_scheme(size_t id);
     std::wstring get_graphic_string(bool w_turn, char code, int col, int rank,
-                                Square start_sqr, Square target_sqr, bool check);
+                                    Square start_sqr, Square target_sqr, bool check);
+    std::wstring get_graphic_string(bool w_pov, char code, int col, int rank);
     void code_to_sgr(std::wstring& sgr_string, char code);
 
-}
+    bool alt_piece_style(false);
+    bool pseudo_ascii(false);
+    bool ascii(false);
+    std::wstring output_string;
+    ColorScheme scheme(beige, brown);
+} /* unnamed namespace */
 
 
 bool customize_style() {
     color_scheme_menu();
-    int select;
+    size_t select;
     if (!(std::wcin >> select)) {
         std::wcin.clear();
         std::wcin.ignore(10000, '\n');
@@ -163,45 +170,70 @@ bool customize_style() {
     return true;
 }
 
-void print_board(Board b, bool white_pov, Square start_sqr, Square target_sqr,
-                 bool check, bool cvc) {
+void view::print_board(Chessboard b, bool white_pov, Square start_sqr, Square target_sqr,
+                    bool check, bool cvc) {
+    output_string.clear();
     if (white_pov || cvc) {
         for (int i(board_size-1); i >= 0; --i) {
-            std::wcout << i + 1 << " ";
+            output_string += std::to_wstring(i + 1) + L" ";
             for (int j(board_size-1); j >= 0; --j) {
-                std::wcout << get_graphic_string(white_pov, b[i][j], j, i, 
-                                                start_sqr, target_sqr, check);
+                output_string += get_graphic_string(white_pov, b[i][j], j, i, 
+                                                    start_sqr, target_sqr, check);
             }
-            std::wcout << reset_sgr << "\n";
+            output_string += reset_sgr + L"\n";
         }
-        std::wcout << empty_square;
-        char file('a');
+        output_string += empty_square;
+        wchar_t file('a');
         for (unsigned i(0); i < board_size; ++i) {
-            std::wcout << file << " ";
+            std::wstring s = {file};
+            output_string += s + L" ";
             ++file;
         }
     }else {
         for (size_t i(0); i < board_size; ++i) {
-            std::wcout << i + 1 << " ";
+            output_string += std::to_wstring(i + 1) + L" ";
             for (size_t j(0); j < board_size; ++j) {
-                std::wcout << get_graphic_string(white_pov, b[i][j], j, i,
+                output_string += get_graphic_string(white_pov, b[i][j], j, i,
                                                 start_sqr, target_sqr, check);
             }
-            std::wcout << reset_sgr << "\n";
+            output_string += reset_sgr + L"\n";
         }
-        std::wcout << empty_square;
-        char file('h');
+        output_string += empty_square;
+        wchar_t file('h');
         for (unsigned i(0); i < board_size; ++i) {
-            std::wcout << file << " ";
+            std::wstring s = {file};
+            output_string += s + L" ";
             --file;
         }
     }
-    std::wcout << "\n";
+    output_string += L"\n";
+    std::wcout << output_string;
 }
 
+void view::print_board(Chessboard chessboard, bool w_pov) {
+    output_string.clear();
+    if (w_pov) {
+        for (int i(board_size-1); i >= 0; --i) {
+            for (int j(board_size-1); j >= 0; --j) {
+                output_string += get_graphic_string(w_pov, chessboard[i][j], j, i);
+            }
+            output_string += reset_sgr + L"\n";
+        }
+        output_string += empty_square;
+    }else {
+        for (size_t i(0); i < board_size; ++i) {
+            for (size_t j(0); j < board_size; ++j) {
+                output_string += get_graphic_string(w_pov, chessboard[i][j], j, i);
+            }
+            output_string += reset_sgr + L"\n";
+        }
+        output_string += empty_square;
+    }
+    output_string += L"\n";
+    std::wcout << output_string;
+}
 
 namespace {
-
     void color_scheme_menu() {
         std::wcout << "You can choose a color scheme among the following: \n";
         for (size_t i(0); i < c_schemes.size(); ++i) {
@@ -233,12 +265,13 @@ namespace {
             return;
         }
         scheme = c_schemes[id];
+        pseudo_ascii = false;
+        ascii = false;
     }
 
     std::wstring get_graphic_string(bool w_turn, char code, int file, int rank,
                                     Square start_sqr, Square target_sqr, bool check) {
         std::wstring sgr_square;
-
         // Chessboard alternating pattern.
         if (rank % 2) {
             if (file % 2) {
@@ -308,6 +341,40 @@ namespace {
         // Add the correct foreground sgr depending on the piece to print.
         code_to_sgr(sgr_square, code);
         
+        return sgr_square;
+    }
+
+    std::wstring get_graphic_string(bool w_pov, char code, int file, int rank) {
+        std::wstring sgr_square;
+        // Chessboard alternating pattern.
+        if (rank % 2) {
+            if (file % 2) {
+                if (pseudo_ascii)
+                    sgr_square = pAscii_light_sqr;
+                else if (!ascii)
+                    sgr_square = scheme.light_sqr;
+            }
+            else {
+                if (pseudo_ascii)
+                    sgr_square = pAscii_dark_sqr;
+                else if (!ascii)
+                    sgr_square = scheme.dark_sqr;
+            }
+        }else {
+            if (file % 2) {
+                if (pseudo_ascii)
+                    sgr_square = pAscii_dark_sqr;
+                else if (!ascii)
+                    sgr_square = scheme.dark_sqr;
+            }
+            else {
+                if (pseudo_ascii)
+                    sgr_square = pAscii_light_sqr;
+                else if (!ascii)
+                    sgr_square = scheme.light_sqr;
+            }
+        }
+        code_to_sgr(sgr_square, code);
         return sgr_square;
     }
 
@@ -417,11 +484,10 @@ namespace {
                     sgr_string += b_pawn;
                 break;
             case '!':
-                sgr_string += magenta + L"b " + reset_sgr;
+                sgr_string += magenta + L"  " + reset_sgr;
                 break;
             default:
                 sgr_string += L"\x1b[31m? ";
         }
     }
-
 }

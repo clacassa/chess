@@ -7,6 +7,12 @@
 #include <vector>
 #include "common.h"
 
+namespace view {
+    void print_board(Chessboard, bool w_pov, Square start_sqr, Square target_sqr,
+                     bool check, bool cvc);
+    void print_board(Chessboard, bool w_pov);
+}
+
 /* CSI SEQUENCES */
 // SGR for text
 const std::wstring reset_sgr(L"\x1b[0m");
@@ -25,7 +31,5 @@ const std::wstring restore_cursor_pos(L"\x1b[u");
 
 /* Functions */
 bool customize_style();
-void print_board(Board, bool w_pov, Square start_sqr, Square target_sqr, bool check,
-                                                                         bool cvc);
 
 #endif

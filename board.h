@@ -5,11 +5,15 @@
 #include <array>
 #include "common.h"
 
+namespace board {
+    void print_board(bool w_pov, Square start_sqr, Square target_sqr,
+                     bool check, bool cvc);
+    void print_board(bool w_pov);
+}
+
 constexpr char en_passant_sqr('!');
 
 void print_ascii();
-void board_print_board(bool w_pov, Square start_sqr, Square target_sqr, bool check,
-                                                                        bool cvc);
 
 void write_piece(char code, char file, int rank);
 void empty_board();

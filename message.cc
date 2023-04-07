@@ -1,3 +1,22 @@
+/*
+ * message.cc
+ * This file is part of chess, a console chess engine.
+ * Copyright (C) 2023 Cyprien Lacassagne
+
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -7,13 +26,14 @@
 #include "message.h"
 #include "view.h"
 
-void message::open_log_win() {
+void message::open_moves_win() {
     #ifdef _WIN32
-        system("start pwsh -nop -nol -c \"[console]::windowwidth=20; "
-               "[console]::windowheight=10; "
-               "[console]::bufferwidth=[console]::windowwidth; " 
-               "[console]::title='Move History'; "
-               "gc log.txt -Wait\"");
+        system("start pwsh -nop -nol "
+               "-c \"[console]::windowwidth=40; "
+                    "[console]::windowheight=10; "
+                    "[console]::bufferwidth=[console]::windowwidth; " 
+                    "[console]::title='Move History'; "
+                    "gc log.txt -Wait\"");
         HWND handle = FindWindow(NULL, "Move History");
         SetWindowPos(handle, NULL, 40, 50, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
     #elif __linux__
@@ -22,10 +42,10 @@ void message::open_log_win() {
     #endif
 }
 
-void message::write_to_log(Move move, bool w_ply, int num, bool cap, bool chk,
+void message::write_to_history(Move move, bool w_ply, int num, bool cap, bool chk,
                                                            bool chkmt) {
     std::ofstream log;
-    log.open(log_file, std::ios_base::app);
+    log.open(moves_history_file, std::ios_base::app);
     if (w_ply)
         log << num << ". ";
     if (move.piece != 'P' && move.piece != 'p')
@@ -46,9 +66,9 @@ void message::write_to_log(Move move, bool w_ply, int num, bool cap, bool chk,
         log << "\n";
 }
 
-void message::erase_log_data() {
+void message::erase_history_data() {
     std::ofstream log;
-    log.open(log_file);
+    log.open(moves_history_file);
     log << "";
 }
 
@@ -97,7 +117,7 @@ void message::capture_error(char file, int rank) {
 }
 
 void message::invalid_san(std::wstring bad_SAN) {
-    std::wcout << "Incorrect SAN\n";
+    std::wcout << "Incorrect command\n";
 }
 
 void message::fen_parsing_error() {

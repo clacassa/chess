@@ -5,11 +5,10 @@
 #include "common.h"
 
 namespace message {
-
-    const std::string log_file("log.txt");
-    void open_log_win();
-    void write_to_log(Move move, bool w_ply, int num, bool cap, bool chk, bool chkmt);
-    void erase_log_data();
+    const std::string moves_history_file("moves_history.txt");
+    void open_moves_win();
+    void write_to_history(Move move, bool w_ply, int num, bool cap, bool chk, bool chkmt);
+    void erase_history_data();
 
     // Game flow messages
     void illegal_move(std::wstring move);

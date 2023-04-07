@@ -1,19 +1,20 @@
 /*
- *  game.cc -- chess -- Chess game in the terminal
- *  Copyright (C) 2023 Cyprien Lacassagne
+ * game.cc
+ * This file is part of chess, a console chess engine.
+ * Copyright (C) 2023 Cyprien Lacassagne
 
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
 
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
 
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 #include <iostream>
@@ -34,7 +35,7 @@ Game::Game()
     SAN_spec_rank(blank), SAN_prom_pc(blank), SAN_cap(false), SAN_chk(false),
     SAN_promote(false), w_turn(true), capture(false), q_castle(false), k_castle(false), check(false), checkmate(false), nb_move(1)
 {
-    message::erase_log_data();
+    message::erase_history_data();
 }
 
 Game::~Game() {}
@@ -157,8 +158,12 @@ void Game::print_position(bool w_ply, bool cvc) {
         std::wcout << "\n";
     }
 
-    board_print_board(w_ply, start, target, check, cvc);
+    board::print_board(w_ply, start, target, check, cvc);
     // print_ascii();
+}
+
+void Game::print_position() {
+    board::print_board(w_turn);
 }
 
 void Game::updt_board() {
@@ -171,8 +176,8 @@ void Game::updt_board() {
     for (size_t i(0); i < black.get_nb_pieces(); ++i) {
         black.get_piece(i)->updt_cov_sqrs();
     }
-    white.track_pieces();
-    black.track_pieces();
+    // white.track_pieces();
+    // black.track_pieces();
 }
 
 bool Game::parse_fen(std::string fen) {
@@ -311,7 +316,7 @@ bool Game::parse_cmd(std::wstring cmd) {
         print_position(w_turn);
         return true;
     }
-    if (cmd == L"computer") {
+    if (cmd == L"auto") {
         computer_play();
         updt_board();
         computer_play();
@@ -320,7 +325,7 @@ bool Game::parse_cmd(std::wstring cmd) {
         return true;
     }
     if (cmd == L"moves") {
-        message::open_log_win();
+        message::open_moves_win();
         return true;
     }
     if (cmd == L"gen") {
@@ -338,7 +343,25 @@ bool Game::parse_cmd(std::wstring cmd) {
             resign();
         return true;
     }
+    if (cmd == L"help") {
+        print_cmds();
+        return true;
+    }
     return false;
+}
+
+void Game::print_cmds() {
+    std::wcout << "\n"
+                  "List of the commands: \n"
+                  "quit   |  quit the program\n"
+                  "print  |  print the position\n"
+                  "style  |  open the customization menu\n"
+                  "auto   |  let the engine do the move for you\n"
+                  "moves  |  open the move history\n"
+                  "gen    |  print the legal moves according to the position\n"
+                  "resign |  resign (confirmation asked)\n"
+                  "help   |  print this message"
+                  "\n";
 }
 
 bool Game::is_SAN_valid(std::wstring SAN) {
@@ -704,8 +727,6 @@ bool Game::process_move(Piece* p, char trgt_file, int trgt_rank, bool w_ply,
     if (!w_ply)
         current_move.piece += upcase_shift;
 
-    
-
     if (is_any_en_psst_sqr()) {
         Square ep_sqr(get_en_passant_sqr());
         if (!w_ply && ep_sqr.rank == 3)
@@ -756,6 +777,8 @@ bool Game::process_move(Piece* p, char trgt_file, int trgt_rank, bool w_ply,
                 else
                     black.piece_captured(trgt_file, trgt_rank);
             }
+            if (!test)
+                black.track_pieces();
         }else {
             if (ep_cap) {
                 ++t_result.n_ep;
@@ -770,6 +793,8 @@ bool Game::process_move(Piece* p, char trgt_file, int trgt_rank, bool w_ply,
                 else
                     white.piece_captured(trgt_file, trgt_rank);
             }
+            if (!test)
+                white.track_pieces();
         }
     }
 
@@ -777,23 +802,29 @@ bool Game::process_move(Piece* p, char trgt_file, int trgt_rank, bool w_ply,
         if (w_ply) {
             white.piece_captured(trgt_file, trgt_rank);
             white.new_piece(SAN_prom_pc, trgt_file, trgt_rank);
+            white.track_pieces();
         }else {
             black.piece_captured(trgt_file, trgt_rank);
             black.new_piece(SAN_prom_pc - upcase_shift, trgt_file, trgt_rank);
+            black.track_pieces();
         }
     }else if (w_ply && p->get_code() == 'P' && trgt_rank == 8) {
         ++t_result.n_proms;
         if (test)
             white.hide_piece(trgt_file, trgt_rank);
-        else
+        else {
             white.piece_captured(trgt_file, trgt_rank);
+            white.track_pieces();
+        }
         white.new_piece(prom_piece + upcase_shift, trgt_file, trgt_rank);
     }else if (!w_ply && p->get_code() == 'p' && trgt_rank == 1) {
         ++t_result.n_proms;
         if (test)
             black.hide_piece(trgt_file, trgt_rank);
-        else
+        else {
             black.piece_captured(trgt_file, trgt_rank);
+            black.track_pieces();
+        }
         black.new_piece(prom_piece, trgt_file, trgt_rank);
     }
 
@@ -831,7 +862,7 @@ bool Game::process_move(Piece* p, char trgt_file, int trgt_rank, bool w_ply,
         if (check) {
             if (is_checkmate(w_ply)) {
                 checkmate = true;
-                message::write_to_log(current_move, w_ply, nb_move, capture, check,
+                message::write_to_history(current_move, w_ply, nb_move, capture, check,
                                                                              checkmate);
                 message::checkmate(w_ply);
                 updt_board();
@@ -848,7 +879,7 @@ bool Game::process_move(Piece* p, char trgt_file, int trgt_rank, bool w_ply,
     }
 
     if (!test)
-        message::write_to_log(current_move, w_ply, nb_move, capture, check, checkmate);
+        message::write_to_history(current_move, w_ply, nb_move, capture, check, checkmate);
 
     // if (test && !w_ply)
     //     print_position(true);
@@ -1115,16 +1146,21 @@ int Game::compute_moves(int depth, bool w_ply) {
     return n_positions;
 }
 
+// Negamax Framework
 int Game::search(int depth, int alpha, int beta, bool w_ply) {
     std::vector<Move> moves(generate_legal_moves(w_ply));
-    if (depth == 1) {
+    if (depth == 0) {
         // std::wcout << restore_cursor_pos << clr_end_line;
         return evaluate(w_ply);
     }
+    /*
+     * if (depth == 0)
+     *     return quiesce(alpha, beta);
+     */
 
     if (moves.empty()) {
         if (check)
-            return -1000;
+            return -INFINITY;
         return 0;
     }
 
@@ -1236,7 +1272,7 @@ std::vector<Move> Game::generate_moves(bool w_ply) {
                                             {p->get_file(), p->get_rank()},
                                             {sq.file, sq.rank},
                                             'n'));
-            }else if (is_move_legal(p, sq.file, sq.rank, w_ply)) {
+            }else {
                 pseudo_legal_moves.push_back(Move(p->get_code(),
                                            {p->get_file(), p->get_rank()},
                                            {sq.file, sq.rank},

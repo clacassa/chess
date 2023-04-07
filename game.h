@@ -4,6 +4,8 @@
 #include <string>
 #include "player.h"
 
+#define INFINITY 10e4
+
 const std::wstring king_castle(L"O-O");
 const std::wstring queen_castle(L"O-O-O");
 const std::string ini_board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
@@ -24,12 +26,14 @@ public:
     void game_flow(bool black, bool pvp, bool cvc);
     void prompt_move();
     void print_position(bool w_ply, bool cvc=false);
+    void print_position();
     void updt_board();
 
     bool parse_fen(std::string fen);
     void fen_verify_checks();
 
     bool parse_cmd(std::wstring cmd);
+    void print_cmds();
 
     bool is_SAN_valid(std::wstring SAN);
     bool decode_SAN(char c, char prev, bool done, int i, int len);
